@@ -1,0 +1,2397 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src  'self' 'unsafe-inline'
+                   https://cdn.jsdelivr.net
+                   https://list.notibot.ru
+                   https://fonts.googleapis.com;
+        style-src   'self' 'unsafe-inline'
+                   https://fonts.googleapis.com
+                   https://fonts.gstatic.com;
+        font-src    'self'
+                   https://fonts.gstatic.com;
+        img-src     'self' data: blob: https:;
+        connect-src 'self' https:;
+      " />
+<title>Трекер в кармане — цели 2027</title>
+
+<script src="https://list.notibot.ru/notibot-bridge.js"></script>
+<script>
+  window.notibotInitData = null;
+  window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'NOTIBOT_INIT' && event.data.data) {
+      window.notibotInitData = event.data.data;
+      if (typeof handleNotibotInit === 'function') {
+        handleNotibotInit(event.data.data.user, event.data.data.app);
+      }
+    }
+  });
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700;800&family=Onest:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+
+<style type="text/tailwindcss">
+  @theme {
+    --font-display:      'Unbounded', -apple-system, sans-serif;
+    --font-sans:         'Onest', -apple-system, 'Segoe UI', sans-serif;
+    --color-canvas:      #0F1114;
+    --color-surface:     #181B20;
+    --color-card-border: #262A31;
+    --color-primary:     #C6F432;
+    --color-secondary:   #7C8CFF;
+    --color-text-main:   #F2F4F7;
+    --color-text-muted:  #8A919C;
+
+    --color-nb-bg:       var(--nb-bg,     var(--color-canvas));
+    --color-nb-text:     var(--nb-text,   var(--color-text-main));
+    --color-nb-text-2:   var(--nb-text-2, var(--color-text-muted));
+    --color-nb-accent:   var(--nb-accent, var(--color-primary));
+  }
+</style>
+
+<style>
+  html, body { background: #0F1114; color: #F2F4F7; margin: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Onest', -apple-system, sans-serif; overflow-x: hidden; }
+  body.lock { overflow: hidden; }
+  .tabnum { font-variant-numeric: tabular-nums; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
+  .loader-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--nb-bg, #0F1114); transition: opacity .2s ease; }
+  .loader-spinner { width: 42px; height: 42px; border-radius: 9999px; border: 3px solid #262A31; border-top-color: #C6F432; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .screen { display: none; opacity: 0; transform: scale(0.96); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .screen.active { display: block; opacity: 1; transform: scale(1); }
+
+  .bento { border-radius: 22px; background: #181B20; border: 1px solid #262A31; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s cubic-bezier(.22,1,.36,1), transform .6s cubic-bezier(.22,1,.36,1); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  .ring-progress { transition: stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1); }
+
+  .chip { transition: all .2s ease; }
+  .chip.active { background: #C6F432; color: #0F1114; border-color: #C6F432; }
+
+  .seg-btn { transition: all .25s cubic-bezier(.22,1,.36,1); }
+  .seg-btn.active { background: #F2F4F7; color: #0F1114; }
+
+  /* Drawer */
+  #bottom-drawer .drawer-panel { transition: transform .38s cubic-bezier(.22,1,.36,1); }
+  #bottom-drawer .drawer-backdrop { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+
+  /* Fullscreen dialog */
+  #fs-dialog { transition: opacity .3s ease; }
+  #fs-dialog .fs-panel { transition: transform .4s cubic-bezier(.22,1,.36,1); }
+
+  #toast { transition: transform .45s cubic-bezier(.22,1,.36,1), opacity .3s ease; }
+  #toast.off { transform: translate(-50%, 140%); opacity: 0; pointer-events: none; }
+
+  #thumb-bar { transition: transform .45s cubic-bezier(.22,1,.36,1), opacity .3s ease; }
+  #thumb-bar.off { transform: translateY(130%); opacity: 0; pointer-events: none; }
+
+  .shuffle-anim { animation: shuffleIn .45s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes shuffleIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .step-pane { display: none; }
+  .step-pane.active { display: block; animation: stepIn .4s cubic-bezier(.22,1,.36,1); }
+  @keyframes stepIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+
+  input[type=range].goal-range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 9999px; background: linear-gradient(90deg, #C6F432 var(--fill, 50%), #262A31 var(--fill, 50%)); outline: none; }
+  input[type=range].goal-range::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 9999px; background: #F2F4F7; border: 3px solid #C6F432; cursor: pointer; }
+  input[type=range].goal-range::-moz-range-thumb { width: 22px; height: 22px; border-radius: 9999px; background: #F2F4F7; border: 3px solid #C6F432; cursor: pointer; }
+
+  .pulse-dot { animation: pd 2s ease-in-out infinite; }
+  @keyframes pd { 0%,100% { box-shadow: 0 0 0 0 rgba(198,244,50,.5); } 50% { box-shadow: 0 0 0 6px rgba(198,244,50,0); } }
+
+  #confetti-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 90; pointer-events: none; }
+  .style-thumb { transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .25s ease; border: 2px solid transparent; }
+  .style-thumb.active { border-color: #C6F432; box-shadow: 0 0 0 3px rgba(198,244,50,.18); transform: translateY(-3px); }
+  .phrase-card { transition: border-color .2s ease, background-color .2s ease; }
+  .phrase-card.active { border-color: #C6F432; background: rgba(198,244,50,.06); }
+  .lock-clock { font-family: 'Onest', sans-serif; font-weight: 300; letter-spacing: -.02em; }
+  .art-swap { animation: artIn .55s cubic-bezier(.22,1,.36,1); }
+  @keyframes artIn { from { opacity: .35; transform: scale(.985); } to { opacity: 1; transform: none; } }
+  .glass { background: rgba(15,17,20,.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.08); }
+</style>
+</head>
+<body class="bg-canvas text-text-main font-sans antialiased">
+
+<div id="loading-screen" class="loader-screen">
+  <div class="loader-spinner mb-4"></div>
+  <span class="text-sm tracking-widest text-nb-accent uppercase font-bold animate-pulse">Загрузка...</span>
+</div>
+
+<canvas id="confetti-canvas"></canvas>
+
+<div class="max-w-md mx-auto min-h-[100dvh] bg-canvas relative overflow-x-hidden">
+<div id="screen-start" class="screen active">
+
+  <!-- ============ HERO ============ -->
+  <section id="hero" data-section-name="Hero — постер" class="relative w-full overflow-hidden min-h-[520px]">
+    <div id="hero-parallax-wrap" class="absolute -top-[20%] left-0 w-full h-[145%] will-change-transform">
+      <img id="hero-img" data-replaceable-image="true"
+           src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80"
+           alt="Дорога в горы на рассвете"
+           class="w-full h-full object-cover pointer-events-auto cursor-pointer select-none" draggable="false" />
+    </div>
+    <div class="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/75 to-canvas/10 pointer-events-none"></div>
+    <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-canvas/70 to-transparent pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col min-h-[520px] px-5 pt-4 pb-6">
+      <!-- Header -->
+      <div id="hero-header" class="glass rounded-full flex items-center justify-between gap-3 pl-1.5 pr-3 py-1.5">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div id="userAvatar" class="w-9 h-9 rounded-full shrink-0 bg-secondary/20 text-secondary font-semibold text-[13px] flex items-center justify-center overflow-hidden">?</div>
+          <div id="userGreeting" class="text-[14px] font-semibold truncate min-w-0">Привет!</div>
+        </div>
+        <div class="shrink-0 flex items-center gap-1.5 text-[12px] text-text-muted">
+          <span class="w-2 h-2 rounded-full bg-primary pulse-dot"></span>
+          до 2027: <b id="days-left" class="text-text-main tabnum">—</b>
+        </div>
+      </div>
+
+      <div class="mt-auto">
+        <div id="hero-badge" class="inline-flex items-center gap-1.5 rounded-full bg-primary/15 border border-primary/30 text-primary px-3 py-1 text-[12px] font-semibold">
+          <i data-lucide="target" class="w-3.5 h-3.5"></i>Цели на 2027 · от 1 до 5
+        </div>
+        <h1 class="mt-4 font-display font-bold text-[34px] leading-[1.05] tracking-tight break-words">В 2027-м — <span class="text-primary">дойти</span>, а&nbsp;не&nbsp;просто начать</h1>
+        <p class="mt-3 text-[15px] leading-relaxed text-text-main/75">Мастер из 4 шагов, план по месяцам и напоминание с вашим личным «зачем».</p>
+
+        <div class="mt-5 text-[13px] text-text-muted">Сколько целей прошлого года вы реально достигли?</div>
+        <div class="mt-2 flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5">
+          <button type="button" class="chip hook-chip shrink-0 rounded-full glass px-4 py-2.5 text-[14px] font-medium" data-answer="all">Все</button>
+          <button type="button" class="chip hook-chip shrink-0 rounded-full glass px-4 py-2.5 text-[14px] font-medium" data-answer="half">Половину</button>
+          <button type="button" class="chip hook-chip shrink-0 rounded-full glass px-4 py-2.5 text-[14px] font-medium" data-answer="none">Ни одной, честно</button>
+        </div>
+
+        <button type="button" onclick="openMaster()" class="mt-5 w-full rounded-[18px] bg-primary text-canvas font-display font-semibold text-[15px] py-4 flex items-center justify-center gap-2 shadow-[0_12px_30px_rgba(198,244,50,.25)] active:scale-[.98] transition">
+          Поставить цели на 2027 <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </button>
+        <div class="mt-3 flex items-center justify-center gap-4 text-[13px]">
+          <button type="button" id="hero-mygoals" onclick="goToMyGoals()" class="hidden font-semibold text-primary flex items-center gap-1.5"><i data-lucide="list-checks" class="w-4 h-4"></i>Мои цели</button>
+          <button type="button" onclick="openRestore()" class="text-text-muted underline decoration-dotted underline-offset-4">Есть код сохранения?</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MY GOALS (личный трекер, хранится на устройстве) ============ -->
+  <section id="my-goals" data-section-name="Мои цели" class="hidden px-4 pt-6 pb-2 scroll-mt-4">
+    <div class="flex items-end justify-between gap-3 px-1 mb-3">
+      <div class="min-w-0">
+        <h2 class="font-display font-semibold text-[20px]">Мои цели</h2>
+        <div class="text-[12px] text-text-muted mt-0.5"><span id="goals-count" class="tabnum">0</span> из <span id="goals-max" class="tabnum">3</span> на 2027</div>
+      </div>
+      <button type="button" id="goals-add" onclick="openMaster()" class="shrink-0 rounded-full bg-primary text-canvas px-4 py-2 text-[13px] font-semibold flex items-center gap-1.5 active:scale-95 transition"><i data-lucide="plus" class="w-4 h-4"></i>Цель</button>
+    </div>
+    <div id="goals-list" class="space-y-3"></div>
+    <div class="mt-3 grid grid-cols-2 gap-2">
+      <button type="button" onclick="openSaveProgress()" class="rounded-[16px] border border-card-border bg-surface py-3 text-[13px] font-semibold flex items-center justify-center gap-2 active:scale-[.98] transition"><i data-lucide="save" class="w-4 h-4 text-primary"></i>Сохранить прогресс</button>
+      <button type="button" onclick="openRestore()" class="rounded-[16px] border border-card-border bg-surface py-3 text-[13px] font-semibold flex items-center justify-center gap-2 active:scale-[.98] transition"><i data-lucide="rotate-ccw" class="w-4 h-4 text-secondary"></i>Восстановить</button>
+    </div>
+  </section>
+
+  <!-- ============ BENTO ============ -->
+  <section id="tracker" data-section-name="Bento — ваш трекер" class="px-4 pt-6 pb-8">
+    <div class="flex items-end justify-between gap-3 px-1 mb-3">
+      <h2 class="font-display font-semibold text-[20px]">Ваш трекер</h2>
+      <span class="text-[12px] text-text-muted">так он выглядит</span>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <!-- Focus card -->
+      <div class="bento col-span-2 p-5 reveal">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-[11px] uppercase tracking-[.14em] text-text-muted">Цель</div>
+            <div class="font-display font-semibold text-[19px] mt-1 break-words">Накопить 300 000 ₽</div>
+            <div class="mt-1 text-[13px] text-text-muted">по 25 000 ₽ в месяц</div>
+          </div>
+          <span class="shrink-0 rounded-full bg-secondary/15 text-secondary text-[11px] font-semibold px-2.5 py-1">демо</span>
+        </div>
+        <div class="mt-4 flex items-center gap-5">
+          <div class="relative w-[128px] h-[128px] shrink-0">
+            <svg viewBox="0 0 140 140" class="w-full h-full -rotate-90">
+              <circle cx="70" cy="70" r="58" fill="none" stroke="#262A31" stroke-width="12"/>
+              <circle id="ring" class="ring-progress" cx="70" cy="70" r="58" fill="none" stroke="#C6F432" stroke-width="12" stroke-linecap="round" stroke-dasharray="364.42" stroke-dashoffset="364.42"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <div class="font-display font-bold text-[28px] leading-none tabnum"><span id="ring-pct">0</span><span class="text-[15px]">%</span></div>
+              <div class="text-[11px] text-text-muted mt-1">этап <span id="stage-num" class="tabnum">3</span> из 12</div>
+            </div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="font-display font-semibold text-[22px] tabnum"><span id="sum-done">75 000</span> ₽</div>
+            <div class="text-[12px] text-text-muted">из 300 000 ₽</div>
+            <div id="stage-dots" class="mt-3 grid grid-cols-6 gap-1.5"></div>
+          </div>
+        </div>
+        <button type="button" onclick="markStep()" class="mt-5 w-full rounded-[16px] bg-primary text-canvas font-semibold py-3.5 flex items-center justify-center gap-2 active:scale-[.98] transition">
+          <i data-lucide="check-circle-2" class="w-5 h-5"></i>Отметить шаг
+        </button>
+      </div>
+
+      <!-- Compact 1 -->
+      <div class="bento p-4 reveal flex flex-col justify-between min-h-[160px]">
+        <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center"><i data-lucide="flame" class="w-5 h-5"></i></div>
+        <div>
+          <div class="text-[12px] text-text-muted">Вы в пути уже</div>
+          <div class="font-display font-bold text-[40px] leading-none tabnum mt-1"><span data-count="47">0</span></div>
+          <div class="text-[12px] text-text-muted mt-1">дней</div>
+        </div>
+      </div>
+
+      <!-- Compact 2 -->
+      <div class="bento relative overflow-hidden reveal min-h-[160px]">
+        <img data-replaceable-image="true" src="https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=600&q=80" alt="Блокнот" class="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-auto cursor-pointer select-none" draggable="false" />
+        <div class="absolute inset-0 bg-gradient-to-t from-surface via-surface/70 to-surface/20 pointer-events-none"></div>
+        <div class="relative p-4 h-full flex flex-col justify-between pointer-events-none">
+          <div class="text-[12px] text-secondary font-semibold">Твоё «зачем»</div>
+          <div class="font-display font-semibold text-[15px] leading-snug break-words">«Чтобы спокойно уйти в отпуск»</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PLANS CAROUSEL ============ -->
+  <section id="plans" data-section-name="Готовые планы" class="pb-8">
+    <div class="px-5 flex items-end justify-between gap-3 mb-3">
+      <div class="min-w-0">
+        <h2 class="font-display font-semibold text-[20px]">Готовые планы</h2>
+        <p class="text-[13px] text-text-muted mt-0.5">5 шагов под вашу цель — нажмите, чтобы открыть</p>
+      </div>
+    </div>
+    <div id="plans-row" class="flex overflow-x-auto snap-x snap-mandatory gap-3 px-5 no-scrollbar pb-2 scroll-smooth"></div>
+  </section>
+
+  <!-- ============ REMINDERS ============ -->
+  <section id="reminders" data-section-name="Напоминания" class="px-4 pb-8">
+    <div class="bento p-5 reveal">
+      <div class="flex items-center gap-2">
+        <i data-lucide="bell-ring" class="w-5 h-5 text-secondary"></i>
+        <h2 class="font-display font-semibold text-[18px]">Напоминания</h2>
+      </div>
+      <div class="mt-4 grid grid-cols-2 gap-1 rounded-[14px] bg-canvas border border-card-border p-1">
+        <button type="button" class="seg-btn rem-btn rounded-[10px] py-2.5 text-[14px] font-semibold text-text-muted" data-rem="week">Раз в неделю</button>
+        <button type="button" class="seg-btn rem-btn active rounded-[10px] py-2.5 text-[14px] font-semibold text-text-muted" data-rem="month">Раз в месяц</button>
+      </div>
+
+      <div class="mt-4 rounded-[18px] bg-[#22262D] border border-white/5 p-3.5 flex gap-3 shadow-[0_10px_24px_rgba(0,0,0,.35)]">
+        <div class="w-10 h-10 rounded-[11px] bg-primary text-canvas flex items-center justify-center shrink-0 font-display font-bold text-[13px]">27</div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-2 text-[11px] text-text-muted"><span class="font-semibold uppercase tracking-wide">Календарь</span><span id="rem-when">раз в месяц</span></div>
+          <div class="text-[14px] leading-snug mt-0.5 break-words">Твоё «зачем»: <b id="rem-why">Чтобы спокойно уйти в отпуск</b>. Отметь прогресс →</div>
+        </div>
+      </div>
+
+      <label class="block mt-4 text-[12px] text-text-muted" for="why-main">Ваша фраза «зачем»</label>
+      <input id="why-main" type="text" maxlength="70" value="Чтобы спокойно уйти в отпуск" class="mt-1.5 w-full rounded-[14px] bg-canvas border border-card-border px-4 py-3 text-[15px] outline-none focus:border-primary transition" />
+
+      <button type="button" onclick="addToCalendar()" class="mt-4 w-full rounded-[16px] border border-text-main/20 font-semibold py-3.5 flex items-center justify-center gap-2 active:scale-[.98] transition">
+        <i data-lucide="calendar-plus" class="w-5 h-5"></i>Добавить в календарь
+      </button>
+      <div id="calendar-status" class="hidden mt-2 text-[12px] text-text-muted text-center"></div>
+    </div>
+  </section>
+
+  <!-- ============ MOTIVATION & WALLPAPER ============ -->
+  <section id="motivation" data-section-name="Мотивационные фразы и обои" class="pb-10">
+    <div class="px-5 mb-4">
+      <div class="inline-flex items-center gap-1.5 rounded-full bg-secondary/15 border border-secondary/30 text-secondary px-3 py-1 text-[12px] font-semibold"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i>Мотиватор</div>
+      <h2 class="mt-3 font-display font-semibold text-[22px] leading-tight">Ваше «зачем» — на экране блокировки</h2>
+      <p class="mt-1.5 text-[13px] leading-relaxed text-text-muted">Напишите, зачем вам цель. Мы соберём фразы, а вы выберете стиль обоев — и каждый раз, разблокируя телефон, будете видеть свою причину.</p>
+    </div>
+
+    <!-- Phrase generator -->
+    <div class="px-4">
+      <div class="bento p-5 reveal">
+        <label class="block text-[12px] text-text-muted" for="why-art">Зачем мне это?</label>
+        <input id="why-art" type="text" maxlength="70" value="Чтобы спокойно уйти в отпуск" class="mt-1.5 w-full rounded-[14px] bg-canvas border border-card-border px-4 py-3 text-[15px] outline-none focus:border-primary transition" />
+
+        <div id="theme-chips" class="mt-4 flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5"></div>
+
+        <div id="phrase-list" class="mt-4 space-y-2"></div>
+
+        <button type="button" onclick="morePhrases()" class="mt-3 w-full rounded-[14px] border border-card-border py-3 text-[14px] font-semibold flex items-center justify-center gap-2 active:scale-[.98] transition">
+          <i data-lucide="shuffle" class="w-4 h-4"></i>Ещё фразы
+        </button>
+      </div>
+    </div>
+
+    <!-- Lockscreen preview -->
+    <div class="mt-6 flex justify-center reveal">
+      <div class="relative w-[236px] rounded-[44px] bg-black p-[7px] shadow-[0_30px_70px_rgba(0,0,0,.6),0_0_0_1px_rgba(255,255,255,.08)]">
+        <div class="relative rounded-[37px] overflow-hidden" style="aspect-ratio:9/16">
+          <canvas id="wp-main" width="1080" height="1920" class="absolute inset-0 w-full h-full block"></canvas>
+          <div class="absolute top-2.5 left-1/2 -translate-x-1/2 w-[74px] h-[22px] rounded-full bg-black z-10 pointer-events-none"></div>
+          <div id="lock-overlay" class="absolute inset-x-0 top-0 pt-[38px] text-center pointer-events-none text-white" style="text-shadow:0 1px 12px rgba(0,0,0,.25)">
+            <div id="lock-date" class="text-[11px] font-medium opacity-90">понедельник, 19 октября</div>
+            <div id="lock-time" class="lock-clock text-[58px] leading-[1] mt-0.5 tabnum">09:41</div>
+          </div>
+          <div id="lock-bottom" class="absolute bottom-3 inset-x-0 flex justify-between px-5 pointer-events-none text-white">
+            <span class="w-8 h-8 rounded-full bg-black/25 backdrop-blur flex items-center justify-center"><i data-lucide="flashlight" class="w-3.5 h-3.5"></i></span>
+            <span class="w-8 h-8 rounded-full bg-black/25 backdrop-blur flex items-center justify-center"><i data-lucide="camera" class="w-3.5 h-3.5"></i></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Style picker -->
+    <div class="mt-6 px-5 flex items-end justify-between gap-3">
+      <div class="min-w-0">
+        <div class="font-display font-semibold text-[16px]">Стиль обоев</div>
+        <div id="style-name" class="text-[12px] text-text-muted mt-0.5">Рассвет</div>
+      </div>
+      <div class="shrink-0 flex gap-2">
+        <button type="button" onclick="pickPhoto()" class="rounded-full glass px-3 py-2 text-[12px] font-semibold flex items-center gap-1.5 active:scale-95 transition"><i data-lucide="image-plus" class="w-3.5 h-3.5 text-primary"></i>Своё фото</button>
+        <button type="button" onclick="rerollArt()" class="rounded-full glass w-9 h-9 flex items-center justify-center active:scale-95 transition" aria-label="Новая композиция"><i data-lucide="wand-sparkles" class="w-4 h-4 text-primary"></i></button>
+      </div>
+    </div>
+    <input id="wp-file" type="file" accept="image/*" class="hidden" onchange="onPhotoChosen(this)" />
+    <div id="style-row" class="mt-3 flex gap-3 overflow-x-auto snap-x snap-mandatory no-scrollbar px-5 pb-3 pt-1"></div>
+
+    <div id="photo-tools" class="hidden mx-4 mb-3 bento p-4">
+      <div class="flex items-center justify-between text-[12px] text-text-muted"><span>Затемнение под текстом</span><i data-lucide="sun-dim" class="w-4 h-4"></i></div>
+      <input id="photo-tone" type="range" min="0" max="100" value="80" class="goal-range mt-2" style="--fill:80%" oninput="this.style.setProperty('--fill', this.value + '%'); setPhotoTone(this.value)" />
+      <div class="mt-4 flex items-center justify-between text-[12px] text-text-muted"><span>Сдвиг фото</span><i data-lucide="move-horizontal" class="w-4 h-4"></i></div>
+      <input id="photo-shift" type="range" min="-100" max="100" value="0" class="goal-range mt-2" style="--fill:50%" oninput="this.style.setProperty('--fill', ((Number(this.value) + 100) / 2) + '%'); setPhotoShift(this.value)" />
+      <button type="button" onclick="pickPhoto()" class="mt-4 w-full rounded-[12px] border border-card-border py-2.5 text-[13px] font-semibold">Выбрать другое фото</button>
+    </div>
+    <div class="px-4 mt-2">
+      <button type="button" onclick="downloadCanvas('wp-main', 'oboi-2027.png', 'wp-main-status')" class="w-full rounded-[18px] bg-primary text-canvas font-display font-semibold text-[15px] py-4 flex items-center justify-center gap-2 shadow-[0_12px_30px_rgba(198,244,50,.2)] active:scale-[.98] transition">
+        <i data-lucide="download" class="w-5 h-5"></i>Скачать обои
+      </button>
+      <div id="wp-main-status" class="hidden mt-2 text-[12px] text-text-muted text-center"></div>
+    </div>
+  </section>
+
+  <!-- ============ FINISH ============ -->
+  <section id="finish" data-section-name="Финиш цели" class="px-4 pb-8">
+    <div class="px-1 mb-3">
+      <h2 class="font-display font-semibold text-[20px]">Финиш</h2>
+      <p class="text-[13px] text-text-muted mt-0.5">Карточка для сторис и ваши обои — нажмите, чтобы посмотреть</p>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <button type="button" onclick="openFinishPreview()" class="reveal relative rounded-[22px] overflow-hidden border border-card-border text-left" style="aspect-ratio:9/16; background: linear-gradient(160deg,#C6F432 0%, #9FD11F 55%, #7C8CFF 130%)">
+        <div class="absolute inset-0 p-4 flex flex-col text-canvas pointer-events-none">
+          <div class="text-[10px] font-semibold uppercase tracking-[.14em]">Цель достигнута</div>
+          <div class="mt-auto font-display font-bold text-[24px] leading-[1.02]">Я сделала это!</div>
+          <div class="mt-2 text-[12px] font-medium">Накопить 300 000 ₽</div>
+          <div class="mt-3 flex items-center justify-between text-[11px] font-semibold"><span>365 дней</span><i data-lucide="maximize-2" class="w-4 h-4"></i></div>
+        </div>
+      </button>
+      <button type="button" onclick="openWallpaperPreview()" class="reveal relative rounded-[22px] overflow-hidden border border-card-border bg-surface" style="aspect-ratio:9/16">
+        <canvas id="wp-thumb" width="540" height="960" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+        <div class="absolute bottom-3 right-3 w-8 h-8 rounded-full glass flex items-center justify-center pointer-events-none"><i data-lucide="maximize-2" class="w-4 h-4"></i></div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ PRICING ============ -->
+  <section id="pricing" data-section-name="Объём и цена" class="px-4 pb-8">
+    <div class="bento p-5 reveal">
+      <h2 class="font-display font-semibold text-[18px]">Сколько целей на 2027?</h2>
+      <div class="mt-4 grid grid-cols-5 gap-1 rounded-[14px] bg-canvas border border-card-border p-1">
+        <button type="button" class="seg-btn count-btn rounded-[10px] py-3 font-display font-semibold text-[18px] text-text-muted" data-count="1">1</button>
+        <button type="button" class="seg-btn count-btn rounded-[10px] py-3 font-display font-semibold text-[18px] text-text-muted" data-count="2">2</button>
+        <button type="button" class="seg-btn count-btn active rounded-[10px] py-3 font-display font-semibold text-[18px] text-text-muted" data-count="3">3</button>
+        <button type="button" class="seg-btn count-btn rounded-[10px] py-3 font-display font-semibold text-[18px] text-text-muted" data-count="4">4</button>
+        <button type="button" class="seg-btn count-btn rounded-[10px] py-3 font-display font-semibold text-[18px] text-text-muted" data-count="5">5</button>
+      </div>
+      <p id="count-desc" class="mt-4 text-[14px] text-text-main/80">Баланс: деньги, здоровье, развитие.</p>
+      <ul class="mt-4 space-y-2.5 text-[14px]">
+        <li class="flex items-center gap-2.5"><i data-lucide="list-checks" class="w-4 h-4 text-primary shrink-0"></i><span class="min-w-0">Мастер из 4 шагов для каждой цели</span></li>
+        <li class="flex items-center gap-2.5"><i data-lucide="calendar-range" class="w-4 h-4 text-primary shrink-0"></i><span class="min-w-0">Разбивка на этапы по месяцам или кварталам</span></li>
+        <li class="flex items-center gap-2.5"><i data-lucide="bell" class="w-4 h-4 text-primary shrink-0"></i><span class="min-w-0">Напоминание с вашим «зачем»</span></li>
+        <li class="flex items-center gap-2.5"><i data-lucide="smartphone" class="w-4 h-4 text-primary shrink-0"></i><span class="min-w-0">Обои-мотиватор и карточка для сторис</span></li>
+        <li class="flex items-center gap-2.5"><i data-lucide="save" class="w-4 h-4 text-primary shrink-0"></i><span class="min-w-0">Сохранение прогресса файлом или кодом</span></li>
+      </ul>
+      <div class="mt-5 pt-4 border-t border-card-border flex items-center justify-between gap-3">
+        <!-- ЦЕНА: замените текст на точную стоимость из материалов автора -->
+        <div id="price-slot" class="min-w-0 text-[13px] text-text-muted break-words">Количество можно поменять в любой момент</div>
+        <button type="button" onclick="choosePlanCount()" id="pricing-cta" class="shrink-0 rounded-[14px] bg-primary text-canvas font-semibold px-6 py-3 active:scale-95 transition">Выбрать и начать</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section id="faq" data-section-name="Вопросы" class="px-4 pb-8">
+    <h2 class="px-1 mb-3 font-display font-semibold text-[20px]">Вопросы</h2>
+    <div id="faq-list" class="bento overflow-hidden divide-y divide-card-border reveal"></div>
+  </section>
+
+  <!-- ============ CREDITS ============ -->
+  <section id="credits" data-section-name="Подпись разработчика" class="px-5 pt-2 pb-32 text-center">
+    <button type="button" onclick="handleCta(event)" data-notibot-action="openLink" data-url="https://t.me/neuro4biznes" data-id="dev-channel" class="inline-flex items-center gap-1 text-[11px] text-text-muted/50 hover:text-text-muted transition">
+      Разработчик — Валентина Яковлева · <span class="underline decoration-dotted underline-offset-2">t.me/neuro4biznes</span>
+    </button>
+  </section>
+
+</div>
+</div>
+
+<!-- ============ THUMB BAR ============ -->
+<div id="thumb-bar" class="off fixed bottom-0 inset-x-0 z-40 px-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+  <div class="max-w-md mx-auto">
+    <button type="button" onclick="openMaster()" class="w-full rounded-[18px] bg-primary text-canvas font-display font-semibold text-[15px] py-4 flex items-center justify-center gap-2 shadow-[0_12px_30px_rgba(0,0,0,.5)] active:scale-[.98] transition">
+      Поставить цели на 2027 <i data-lucide="arrow-right" class="w-5 h-5"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div id="toast" class="off fixed left-1/2 bottom-24 z-[60] w-[calc(100%-32px)] max-w-[400px] -translate-x-1/2 rounded-[18px] bg-[#22262D] border border-white/10 shadow-[0_16px_40px_rgba(0,0,0,.5)] p-4 flex gap-3">
+  <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0"><i data-lucide="message-circle-heart" class="w-5 h-5"></i></div>
+  <div id="toast-text" class="min-w-0 text-[14px] leading-snug break-words"></div>
+</div>
+
+<!-- ============ BOTTOM DRAWER ============ -->
+<div id="bottom-drawer" class="fixed inset-0 z-50 pointer-events-none transition-opacity duration-300 opacity-0">
+  <div class="drawer-backdrop absolute inset-0 bg-black/60" onclick="closeDrawer()"></div>
+  <div id="drawer-panel" class="drawer-panel max-w-md absolute bottom-0 left-0 right-0 mx-auto bg-surface rounded-t-[28px] border-t border-card-border translate-y-full max-h-[85vh] h-[85vh] flex flex-col pointer-events-auto">
+    <div id="drawer-handle" class="pt-3 pb-2 shrink-0 cursor-grab" onclick="closeDrawer()">
+      <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto"></div>
+    </div>
+    <div id="drawer-content" class="flex-1 overflow-y-auto px-5 pb-8"></div>
+  </div>
+</div>
+
+<!-- ============ FULLSCREEN DIALOG ============ -->
+<div id="fs-dialog" class="fixed inset-0 z-[70] hidden opacity-0">
+  <div class="fs-panel max-w-md mx-auto h-full bg-canvas flex flex-col translate-y-6">
+    <div class="shrink-0 flex items-center justify-between gap-3 px-4 pt-4 pb-3">
+      <div id="fs-dots" class="flex gap-1.5 min-w-0"></div>
+      <button type="button" onclick="closeFs()" class="w-10 h-10 shrink-0 rounded-full bg-surface border border-card-border flex items-center justify-center" aria-label="Закрыть"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div id="fs-content" class="flex-1 overflow-y-auto px-5 pb-8"></div>
+  </div>
+</div>
+
+<script>
+/* ===================== CONFIG & DATA ===================== */
+var CTA_METHOD = 'openLink';
+var CTA_FALLBACK = 'https://t.me/profseller_bot';
+var CTA_ID = CTA_FALLBACK;
+
+var CATEGORIES = [
+  { id: 'english', name: 'Английский', icon: 'languages', goal: 'Заговорить по-английски', first: 'Пройти тест уровня', img: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=700&q=80' },
+  { id: 'running', name: 'Бег', icon: 'footprints', goal: 'Пробежать 10 км', first: 'Пробежать 2 км и засечь время', img: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=700&q=80' },
+  { id: 'work', name: 'Работа', icon: 'briefcase', goal: 'Выйти на новую позицию', first: 'Обновить резюме', img: 'https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?auto=format&fit=crop&w=700&q=80' },
+  { id: 'project', name: 'Свой проект', icon: 'rocket', goal: 'Запустить свой проект', first: 'Описать идею в одном абзаце', img: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=700&q=80' },
+  { id: 'move', name: 'Переезд', icon: 'home', goal: 'Переехать', first: 'Выбрать город и бюджет', img: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=700&q=80' },
+  { id: 'books', name: 'Книги', icon: 'book-open', goal: 'Прочитать 24 книги', first: 'Составить список книг', img: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=700&q=80' },
+  { id: 'other', name: 'Своя цель', icon: 'sparkles', goal: 'Накопить 300 000 ₽', first: 'Открыть отдельный накопительный счёт', img: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=700&q=80' }
+];
+
+var PLANS = {
+  english: ['Пройти тест уровня и записать результат', '20 минут в день: приложение или учебник', 'Раз в неделю — разговорный клуб или урок', 'Смотреть сериал с английскими субтитрами', 'Через 3 месяца — повторный тест уровня', 'Выучить 300 слов по своей теме', 'Записать 2-минутный рассказ о себе на английском', 'Прочитать одну адаптированную книгу'],
+  running: ['Пробежать 2 км и засечь время', '3 тренировки в неделю: бег + шаг', 'Каждые 2 недели +10% к дистанции', 'Пробежать 5 км без остановок', 'Записаться на забег 10 км и финишировать', 'Подобрать беговые кроссовки', 'Добавить 2 силовые тренировки в неделю', 'Пробежать 7 км в комфортном темпе'],
+  work: ['Сформулировать желаемую позицию и доход', 'Обновить резюме и профиль', 'Закрыть один пробел в навыках', 'Откликаться на 5 вакансий в неделю', 'Пройти переговоры и получить оффер', 'Поговорить с руководителем о росте', 'Собрать 3 кейса своих результатов', 'Найти 5 людей из нужной сферы и пообщаться'],
+  project: ['Описать идею и клиента в одном абзаце', 'Поговорить с 10 потенциальными клиентами', 'Сделать минимальную версию за 4 недели', 'Получить первые 3 оплаты', 'Настроить регулярный канал привлечения', 'Выбрать название и упаковку', 'Посчитать экономику: цена и расходы', 'Запустить страницу с предзаписью'],
+  move: ['Выбрать город, район и бюджет', 'Собрать подушку на переезд', 'Разобрать вещи: оставить, продать, отдать', 'Найти жильё и согласовать дату', 'Переехать и обжиться за первый месяц', 'Съездить на разведку на выходные', 'Решить вопрос с работой на новом месте', 'Составить чек-лист документов'],
+  books: ['Составить список из 24 книг', 'Читать 20 страниц каждый день', 'Записывать 3 мысли из каждой книги', 'Каждый месяц — 2 книги до конца', 'Подвести итоги года: топ-5 книг', 'Найти книжный клуб или партнёра по чтению', 'Заменить 15 минут соцсетей на чтение', 'Слушать аудиокниги в дороге'],
+  other: ['Сформулировать результат в цифре или факте', 'Разбить путь на 4 этапа по кварталам', 'Сделать первый шаг на этой неделе', 'Раз в месяц сверять прогресс и план', 'Отметить финиш и поделиться результатом', 'Убрать одну главную помеху', 'Найти человека, который поддержит', 'Выделить постоянное время в календаре']
+};
+
+var HOOK_ANSWERS = {
+  all: '<b>Сильно.</b> Сделаем 2027 ещё амбициознее — и ничего не потеряем по дороге.',
+  half: '<b>Значит, цели были правильные.</b> Не хватало шагов и напоминаний — это мы и добавим.',
+  none: '<b>Честность — лучший старт.</b> Начнём с одной цели и одного шага на этой неделе.'
+};
+
+var COUNT_DESC = {
+  '1': 'Фокус на главном: одна цель, весь год.',
+  '2': 'Две цели: одна для дела, одна для себя.',
+  '3': 'Баланс: деньги, здоровье, развитие.',
+  '4': 'Четыре цели — по одной на каждый квартал.',
+  '5': 'Полный план года — максимум целей.'
+};
+
+var FAQ = [
+  { q: 'Что если я сменю телефон?', a: 'Кнопка «Сохранить мой прогресс» выдаёт файл или код. Перенесите его на новый телефон — цели, этапы и счётчик дней восстановятся.' },
+  { q: 'Как часто будут напоминания?', a: 'Как выберете: раз в неделю или раз в месяц. Напоминание встаёт в календарь телефона и показывает вашу же фразу «зачем».' },
+  { q: 'Можно ли изменить план?', a: 'Да. Шаги можно переписать, добавить свои или нажать «Предложить заново». Этапы делятся по месяцам или кварталам.' },
+  { q: 'А если цель — не цифра?', a: 'Выберите «Этапы». План из пяти шагов подбирается под цель: английский, бег, работа, свой проект, переезд, книги — для остальных целей есть общий план.' },
+  { q: 'Сколько целей можно поставить?', a: 'От 1 до 5. Для каждой — свой мастер из 4 шагов, свой план и своё «зачем».' }
+];
+
+/* ===================== STATE ===================== */
+var state = { stage: 3, why: 'Чтобы спокойно уйти в отпуск', reminder: 'month', drawerPlan: [], drawerCat: 'other', theme: 'all', shown: [], selected: 0, wpStyle: 'dawn', seed: 7, photo: null, photoTone: 0.8, photoShift: 0 };
+var master = { step: 1, cat: 'other', goal: 'Накопить 300 000 ₽', mode: 'number', sum: 300000, months: 12, plan: [], why: 'Чтобы спокойно уйти в отпуск', phraseIdx: 0, deadline: '2027-12-31', first: 'Открыть отдельный накопительный счёт' };
+
+/* ===================== HELPERS ===================== */
+function $(id) { return document.getElementById(id); }
+function fmt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+function pad(n) { return n < 10 ? '0' + n : String(n); }
+function plural(n, one, few, many) {
+  var a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  if (b === 1) return one;
+  return many;
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function refreshIcons() { try { if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons(); } catch (e) {} }
+function getCat(id) { for (var i = 0; i < CATEGORIES.length; i++) if (CATEGORIES[i].id === id) return CATEGORIES[i]; return CATEGORIES[CATEGORIES.length - 1]; }
+function shufflePlan(cat) {
+  var pool = PLANS[cat].slice();
+  for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+  var base = pool.slice(0, 5), order = PLANS[cat];
+  base.sort(function(a, b) { return order.indexOf(a) - order.indexOf(b); });
+  return base;
+}
+function setScrollLock(locked) {
+  if (locked) document.body.classList.add('lock'); else document.body.classList.remove('lock');
+  try { if (window.notibot && typeof window.notibot.setScrollLock === 'function') window.notibot.setScrollLock(locked); } catch (e) {}
+}
+
+function safeHaptic(kind) {
+  try {
+    if (window.notibot) {
+      if (kind === 'success' || kind === 'error' || kind === 'warning') {
+        if (typeof notibot.hapticNotification === 'function') { notibot.hapticNotification(kind); return; }
+      } else if (kind === 'selection') {
+        if (typeof notibot.hapticSelection === 'function') { notibot.hapticSelection(); return; }
+      } else {
+        if (typeof notibot.hapticImpact === 'function') { notibot.hapticImpact(kind || 'light'); return; }
+      }
+    }
+    if (window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) {
+      var hf = Telegram.WebApp.HapticFeedback;
+      if ((kind === 'success' || kind === 'error' || kind === 'warning') && typeof hf.notificationOccurred === 'function') { hf.notificationOccurred(kind); return; }
+      if (kind === 'selection' && typeof hf.selectionChanged === 'function') { hf.selectionChanged(); return; }
+      if (typeof hf.impactOccurred === 'function') { hf.impactOccurred(kind === 'heavy' ? 'heavy' : (kind === 'medium' ? 'medium' : 'light')); return; }
+    }
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(kind === 'error' ? [30, 40, 30] : 12);
+    }
+  } catch (e) {}
+}
+
+/* ===================== CTA ===================== */
+/* Внутри Notibot страница открыта во фрейме; на GitHub Pages — на верхнем уровне.
+   Скрипт бриджа грузится в обоих случаях, поэтому наличие window.notibot само по себе
+   ничего не говорит: вне фрейма его команды уходят «в никуда». */
+function isEmbedded() {
+  try { return window.self !== window.top; } catch (e) { return true; }
+}
+function hasBridge() {
+  return isEmbedded() && !!window.notibot;
+}
+function openExternal(url) {
+  url = url || CTA_FALLBACK;
+  if (hasBridge() && typeof window.notibot.openLink === 'function') {
+    try { window.notibot.openLink(url); return; } catch (e) {}
+  }
+  if (isEmbedded()) {
+    try { var w = window.open(url, '_blank'); if (w) return; } catch (e2) {}
+  }
+  window.location.href = url;
+}
+function handleCta(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  var el = e ? (e.currentTarget || e.target) : null;
+  if (el && el.getAttribute && !el.getAttribute('data-notibot-action') && el.closest) {
+    var withAction = el.closest('[data-notibot-action]');
+    if (withAction) el = withAction;
+  }
+  var action = (el && el.getAttribute) ? el.getAttribute('data-notibot-action') : null;
+  var id = (el && el.getAttribute) ? el.getAttribute('data-id') : null;
+  var url = (el && el.getAttribute) ? el.getAttribute('data-url') : null;
+  safeHaptic('medium');
+  if (hasBridge()) {
+    try {
+      if (action === 'openLink') { window.notibot.openLink(url || CTA_FALLBACK); return; }
+      if (action === 'openStorefront' || action === 'openUserCard') { window.notibot[action](); return; }
+      if (action && id && typeof window.notibot[action] === 'function') { window.notibot[action](id); return; }
+      window.notibot[CTA_METHOD](CTA_ID);
+    } catch (err) {
+      try { window.notibot.openStorefront(); } catch (e2) { openExternal(CTA_FALLBACK); }
+    }
+  } else {
+    openExternal(action === 'openLink' && url ? url : CTA_FALLBACK);
+  }
+}
+
+/* ===================== DAYS LEFT ===================== */
+function updateDaysLeft() {
+  var diff = new Date(2027, 0, 1).getTime() - Date.now();
+  var d = Math.max(0, Math.ceil(diff / 86400000));
+  var el = $('days-left');
+  if (el) el.textContent = d + ' ' + plural(d, 'день', 'дня', 'дней');
+}
+
+/* ===================== TOAST ===================== */
+var toastTimer = null;
+function showToast(html) {
+  var t = $('toast'), tx = $('toast-text');
+  if (!t || !tx) return;
+  tx.innerHTML = html;
+  t.classList.remove('off');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { if (t) t.classList.add('off'); }, 4200);
+}
+function initHook() {
+  var chips = document.querySelectorAll('.hook-chip');
+  for (var i = 0; i < chips.length; i++) {
+    chips[i].addEventListener('click', function() {
+      for (var j = 0; j < chips.length; j++) chips[j].classList.remove('active');
+      this.classList.add('active');
+      safeHaptic('selection');
+      showToast(HOOK_ANSWERS[this.getAttribute('data-answer')]);
+    });
+  }
+}
+
+/* ===================== BENTO TRACKER ===================== */
+var RING_C = 364.42;
+var ringShown = false;
+function renderTracker(animatePct) {
+  var pct = Math.round(state.stage / 12 * 100);
+  var ring = $('ring');
+  if (ring && ringShown) ring.style.strokeDashoffset = String(RING_C * (1 - state.stage / 12));
+  var p = $('ring-pct'); if (p && !animatePct) p.textContent = ringShown ? pct : 0;
+  var sn = $('stage-num'); if (sn) sn.textContent = state.stage;
+  var sd = $('sum-done'); if (sd) sd.textContent = fmt(state.stage * 25000);
+  var dots = $('stage-dots');
+  if (dots) {
+    var html = '';
+    for (var i = 1; i <= 12; i++) {
+      html += '<span class="h-2 rounded-full ' + (i <= state.stage ? 'bg-primary' : 'bg-card-border') + '"></span>';
+    }
+    dots.innerHTML = html;
+  }
+}
+function markStep() {
+  if (state.stage >= 12) { showToast('<b>Цель закрыта!</b> Время для карточки «Я сделала это!»'); fireConfetti(); return; }
+  state.stage++;
+  ringShown = true;
+  renderTracker(false);
+  safeHaptic('success');
+  fireConfetti();
+}
+
+/* ===================== CONFETTI ===================== */
+var particles = [], confRunning = false;
+function fireConfetti() {
+  var c = $('confetti-canvas');
+  if (!c) return;
+  c.width = window.innerWidth; c.height = window.innerHeight;
+  var colors = ['#C6F432', '#7C8CFF', '#F2F4F7', '#E3FF8A'];
+  for (var i = 0; i < 100; i++) {
+    particles.push({ x: c.width / 2 + (Math.random() - .5) * 80, y: c.height * .5, vx: (Math.random() - .5) * 12, vy: -Math.random() * 13 - 4, s: Math.random() * 7 + 4, r: Math.random() * 6, vr: (Math.random() - .5) * .3, col: colors[Math.floor(Math.random() * colors.length)], life: 0 });
+  }
+  if (!confRunning) { confRunning = true; requestAnimationFrame(confLoop); }
+}
+function confLoop() {
+  var c = $('confetti-canvas');
+  if (!c) { confRunning = false; return; }
+  var ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  for (var i = particles.length - 1; i >= 0; i--) {
+    var p = particles[i];
+    p.vy += .32; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life++;
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.col; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore();
+    if (p.y > c.height + 20 || p.life > 240) particles.splice(i, 1);
+  }
+  if (particles.length) requestAnimationFrame(confLoop); else { confRunning = false; ctx.clearRect(0, 0, c.width, c.height); }
+}
+
+/* ===================== PLANS CAROUSEL ===================== */
+function renderPlansRow() {
+  var row = $('plans-row');
+  if (!row) return;
+  var html = '';
+  for (var i = 0; i < CATEGORIES.length; i++) {
+    var c = CATEGORIES[i];
+    html += '<div class="snap-start shrink-0 w-[46%] min-w-[160px] max-w-[190px]">' +
+      '<button type="button" onclick="openPlanDrawer(\'' + c.id + '\')" class="relative block w-full rounded-[22px] overflow-hidden border border-card-border bg-surface text-left shadow-[0_8px_24px_rgba(0,0,0,.35)] active:scale-[.97] transition" style="aspect-ratio:3/4">' +
+      '<img data-replaceable-image="true" src="' + c.img + '" alt="' + c.name + '" class="absolute inset-0 w-full h-full object-cover pointer-events-auto cursor-pointer select-none" draggable="false" />' +
+      '<span class="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/40 to-transparent pointer-events-none"></span>' +
+      '<span class="absolute top-3 left-3 w-9 h-9 rounded-xl glass flex items-center justify-center pointer-events-none"><i data-lucide="' + c.icon + '" class="w-4.5 h-4.5 text-primary"></i></span>' +
+      '<span class="absolute bottom-0 inset-x-0 p-3.5 pointer-events-none"><span class="block font-display font-semibold text-[15px] break-words">' + c.name + '</span><span class="block text-[12px] text-text-muted mt-0.5">' + (c.id === 'other' ? 'общий план' : '5 шагов') + '</span></span>' +
+      '</button></div>';
+  }
+  row.innerHTML = html;
+}
+
+/* ===================== DRAWER ===================== */
+function openDrawer(title, bodyHtml, btnText, btnAction, btnId, extraAttrs) {
+  var d = $('bottom-drawer');
+  if (!d) return;
+  safeHaptic('selection');
+  var content = $('drawer-content');
+  if (content) {
+    content.innerHTML = '<h3 class="font-display font-semibold text-[22px] leading-tight mb-3 break-words">' + title + '</h3>' +
+      '<div class="text-[14px] text-text-main/80 mb-6 leading-relaxed">' + bodyHtml + '</div>' +
+      (btnText ? (btnAction && btnAction.indexOf('js:') === 0
+        ? '<button type="button" onclick="' + btnAction.slice(3) + '" ' + (extraAttrs || '') + ' class="w-full py-4 rounded-[16px] font-semibold text-center bg-primary text-canvas active:scale-[.98] transition">' + btnText + '</button>'
+        : '<button type="button" onclick="handleCta(event)" data-notibot-action="' + (btnAction || 'openLink') + '" data-url="' + CTA_FALLBACK + '" data-id="' + (btnId || '') + '" ' + (extraAttrs || '') + ' class="w-full py-4 rounded-[16px] font-semibold text-center bg-primary text-canvas active:scale-[.98] transition">' + btnText + '</button>') : '');
+    content.scrollTop = 0;
+  }
+  var panel = $('drawer-panel');
+  d.classList.remove('pointer-events-none', 'opacity-0');
+  d.classList.add('pointer-events-auto', 'opacity-100');
+  if (panel) { panel.style.transform = ''; panel.classList.remove('translate-y-full'); panel.classList.add('translate-y-0'); }
+  setScrollLock(true);
+  var tb = $('thumb-bar'); if (tb) tb.classList.add('off');
+  refreshIcons();
+}
+function closeDrawer() {
+  var d = $('bottom-drawer');
+  if (!d) return;
+  safeHaptic('light');
+  var panel = $('drawer-panel');
+  if (panel) { panel.style.transform = ''; panel.classList.remove('translate-y-0'); panel.classList.add('translate-y-full'); }
+  setTimeout(function() {
+    d.classList.remove('pointer-events-auto', 'opacity-100');
+    d.classList.add('pointer-events-none', 'opacity-0');
+    setScrollLock(false);
+    syncThumbBar();
+  }, 300);
+}
+function initDrawerSwipe() {
+  var panel = $('drawer-panel'), content = $('drawer-content');
+  if (!panel) return;
+  var startY = 0, dy = 0, dragging = false;
+  panel.addEventListener('touchstart', function(e) {
+    var fromHandle = e.target && e.target.closest && e.target.closest('#drawer-handle');
+    if (!fromHandle && content && content.scrollTop > 0) return;
+    if (e.target && e.target.closest && e.target.closest('input, textarea, [contenteditable="true"]')) return;
+    dragging = true; startY = e.touches[0].clientY; dy = 0;
+    panel.style.transition = 'none';
+  }, { passive: true });
+  panel.addEventListener('touchmove', function(e) {
+    if (!dragging) return;
+    dy = Math.max(0, e.touches[0].clientY - startY);
+    panel.style.transform = 'translateY(' + dy + 'px)';
+  }, { passive: true });
+  panel.addEventListener('touchend', function() {
+    if (!dragging) return;
+    dragging = false;
+    panel.style.transition = '';
+    if (dy > 110) closeDrawer(); else panel.style.transform = '';
+  });
+}
+
+/* Plan drawer */
+function openPlanDrawer(catId) {
+  var c = getCat(catId);
+  state.drawerCat = catId;
+  state.drawerPlan = PLANS[catId].slice(0, 5);
+  var body =
+    '<div class="text-text-muted">' + (catId === 'other' ? 'Общий план для любой цели.' : 'Цель: ' + esc(c.goal) + '.') + ' Нажмите на шаг, чтобы переписать.</div>' +
+    '<ol id="dplan-list" class="mt-4 space-y-2"></ol>' +
+    '<div class="mt-3 flex gap-2"><input id="dplan-new" type="text" maxlength="70" placeholder="Добавить свой шаг…" class="flex-1 min-w-0 rounded-[14px] bg-canvas border border-card-border px-4 py-3 text-[14px] text-text-main outline-none focus:border-primary" />' +
+    '<button type="button" onclick="addDrawerStep()" class="shrink-0 w-12 rounded-[14px] bg-text-main text-canvas flex items-center justify-center" aria-label="Добавить"><i data-lucide="plus" class="w-5 h-5"></i></button></div>' +
+    '<button type="button" onclick="reshuffleDrawer()" class="mt-3 w-full rounded-[14px] border border-card-border py-3 text-[14px] font-semibold text-text-main flex items-center justify-center gap-2"><i data-lucide="shuffle" class="w-4 h-4"></i>Предложить заново</button>';
+  openDrawer(c.name + (catId === 'other' ? '' : ' — план из 5 шагов'), body, 'Взять этот план', 'js:takeDrawerPlan()', '', 'data-plan="' + catId + '"');
+  renderDrawerPlan(false);
+  var inp = $('dplan-new');
+  if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); addDrawerStep(); } });
+}
+function takeDrawerPlan() {
+  var c = getCat(state.drawerCat);
+  var plan = [];
+  for (var i = 0; i < state.drawerPlan.length; i++) { var t = String(state.drawerPlan[i] || '').trim(); if (t) plan.push(t); }
+  master.cat = state.drawerCat;
+  master.goal = c.goal;
+  master.first = c.first;
+  master.plan = plan.length ? plan : PLANS[state.drawerCat].slice(0, 5);
+  master.mode = 'stages';
+  closeDrawer();
+  setTimeout(openMaster, 330);
+}
+function renderDrawerPlan(anim) {
+  var list = $('dplan-list');
+  if (!list) return;
+  var html = '';
+  for (var i = 0; i < state.drawerPlan.length; i++) {
+    html += '<li class="flex items-center gap-3 rounded-[14px] bg-canvas border border-card-border px-3 py-3' + (anim ? ' shuffle-anim' : '') + '" style="animation-delay:' + (i * 50) + 'ms">' +
+      '<span class="w-7 h-7 rounded-full bg-primary/15 text-primary text-[12px] font-bold flex items-center justify-center shrink-0">' + (i + 1) + '</span>' +
+      '<span class="dstep flex-1 min-w-0 text-[14px] text-text-main break-words outline-none" contenteditable="true" data-idx="' + i + '">' + esc(state.drawerPlan[i]) + '</span>' +
+      '<button type="button" onclick="removeDrawerStep(' + i + ')" class="shrink-0 text-text-muted" aria-label="Удалить"><i data-lucide="x" class="w-4 h-4"></i></button></li>';
+  }
+  list.innerHTML = html;
+  var eds = list.querySelectorAll('.dstep');
+  for (var j = 0; j < eds.length; j++) eds[j].addEventListener('input', function() { state.drawerPlan[Number(this.getAttribute('data-idx'))] = this.textContent; });
+  refreshIcons();
+}
+function reshuffleDrawer() { state.drawerPlan = shufflePlan(state.drawerCat); safeHaptic('light'); renderDrawerPlan(true); }
+function addDrawerStep() {
+  var inp = $('dplan-new');
+  if (!inp) return;
+  var v = inp.value.trim();
+  if (!v) { safeHaptic('error'); return; }
+  state.drawerPlan.push(v); inp.value = ''; safeHaptic('success'); renderDrawerPlan(false);
+}
+function removeDrawerStep(i) { state.drawerPlan.splice(i, 1); safeHaptic('light'); renderDrawerPlan(false); }
+
+/* FAQ */
+function renderFaq() {
+  var list = $('faq-list');
+  if (!list) return;
+  var html = '';
+  for (var i = 0; i < FAQ.length; i++) {
+    html += '<button type="button" onclick="openFaq(' + i + ')" class="w-full flex items-center justify-between gap-3 px-4 py-4 text-left active:bg-white/5 transition">' +
+      '<span class="min-w-0 text-[15px] break-words">' + FAQ[i].q + '</span><i data-lucide="chevron-right" class="w-5 h-5 text-text-muted shrink-0"></i></button>';
+  }
+  list.innerHTML = html;
+}
+function openFaq(i) {
+  var f = FAQ[i];
+  if (!f) return;
+  openDrawer(f.q, '<p>' + f.a + '</p>', 'Поставить цели на 2027', 'js:closeDrawer();setTimeout(openMaster,330)');
+}
+
+/* ===================== REMINDERS & CALENDAR ===================== */
+function initReminders() {
+  var btns = document.querySelectorAll('.rem-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].addEventListener('click', function() {
+      for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
+      this.classList.add('active');
+      state.reminder = this.getAttribute('data-rem');
+      var w = $('rem-when'); if (w) w.textContent = state.reminder === 'week' ? 'раз в неделю' : 'раз в месяц';
+      safeHaptic('selection');
+    });
+  }
+  var why = $('why-main');
+  if (why) why.addEventListener('input', function() {
+    setWhy(this.value, 'why-main');
+  });
+}
+function icsDate(d) { return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00'; }
+function gcalDate(d) { return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00'; }
+var lastGcalUrl = '';
+function addToCalendar(summaryOverride, freqOverride, untilOverride, whyOverride, statusId) {
+  var st = $(statusId || 'calendar-status');
+  var why = whyOverride || state.why || '';
+  var freq = (freqOverride || state.reminder) === 'week' ? 'WEEKLY' : 'MONTHLY';
+  var start = new Date(); start.setDate(start.getDate() + 1); start.setHours(10, 0, 0, 0);
+  var end = new Date(start.getTime() + 15 * 60000);
+  var until = (untilOverride || '2027-12-31').replace(/-/g, '') + 'T235959';
+  var summary = String(summaryOverride || 'Мои цели 2027');
+  var text = 'Твоё «зачем»: ' + why + '. Отметь прогресс →';
+  lastGcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+    '&text=' + encodeURIComponent(summary) +
+    '&details=' + encodeURIComponent(text) +
+    '&dates=' + gcalDate(start) + '/' + gcalDate(end) +
+    '&recur=' + encodeURIComponent('RRULE:FREQ=' + freq + ';UNTIL=' + until);
+  safeHaptic('success');
+
+  if (isEmbedded()) {
+    openExternal(lastGcalUrl);
+    if (st) { st.innerHTML = 'Открываем Google Календарь — сохраните событие. Повтор: ' + (freq === 'WEEKLY' ? 'раз в неделю' : 'раз в месяц') + '.'; st.classList.remove('hidden'); }
+    return;
+  }
+
+  var icsText = text.replace(/[,;]/g, ' ');
+  var ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Goals2027//RU', 'BEGIN:VEVENT',
+    'UID:' + Date.now() + '@goals2027', 'DTSTAMP:' + icsDate(new Date()),
+    'DTSTART:' + icsDate(start), 'DTEND:' + icsDate(end),
+    'RRULE:FREQ=' + freq + ';UNTIL=' + until,
+    'SUMMARY:' + summary.replace(/[,;]/g, ' '),
+    'DESCRIPTION:' + icsText,
+    'BEGIN:VALARM', 'TRIGGER:-PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsText, 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  try {
+    var a = document.createElement('a');
+    a.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+    a.download = 'napominanie-2027.ics';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    if (st) {
+      st.innerHTML = 'Файл календаря скачан — откройте его, чтобы добавить напоминание. ' +
+        '<button type="button" onclick="openExternal(lastGcalUrl)" class="underline underline-offset-2 text-text-main">Или в Google Календарь</button>';
+      st.classList.remove('hidden');
+    }
+  } catch (e) {
+    openExternal(lastGcalUrl);
+  }
+}
+
+/* ===================== MOTIVATION: PHRASES ===================== */
+var THEMES = [
+  { id: 'all', name: 'Общие', icon: 'sparkles' },
+  { id: 'money', name: 'Деньги', icon: 'wallet' },
+  { id: 'health', name: 'Здоровье', icon: 'heart-pulse' },
+  { id: 'growth', name: 'Развитие', icon: 'graduation-cap' },
+  { id: 'soft', name: 'Бережно', icon: 'feather' }
+];
+
+var PHRASES = {
+  all: [
+    'Не идеально, а регулярно.',
+    'Я не начинаю заново — я продолжаю.',
+    'Один шаг в неделю — пятьдесят два за год.',
+    'Медленно — тоже вперёд.',
+    'Мне не нужно успевать всё. Мне нужен следующий шаг.',
+    'Я обещала это себе. Это самое важное обещание.',
+    'Маленький шаг сегодня сильнее большого плана на понедельник.',
+    'Мой год складывается из обычных вторников.'
+  ],
+  money: [
+    'Сначала плачу себе — потом всем остальным.',
+    'Каждый отложенный рубль — кирпичик моего спокойствия.',
+    'Свобода копится по месяцам, а не случается однажды.',
+    'Регулярность важнее суммы.',
+    'Я выбираю спокойствие вместо случайной покупки.',
+    'Этот перевод — письмо себе в будущее.'
+  ],
+  health: [
+    'Тело запомнит каждую тренировку.',
+    'Медленный километр — всё равно километр.',
+    'Я забочусь о себе, а не наказываю себя.',
+    'Сегодня хватит и короткой тренировки.',
+    'Энергия — это то, что я строю каждый день.',
+    'Я делаю это для себя через десять лет.'
+  ],
+  growth: [
+    'Двадцать минут в день — больше ста двадцати часов в год.',
+    'Я учусь не для оценки, а для себя.',
+    'Неловко — значит, я расту.',
+    'Ошибка — это шаг, а не стоп.',
+    'Каждая страница приближает меня к новой себе.',
+    'Сегодняшний навык — завтрашняя дверь.'
+  ],
+  soft: [
+    'Можно идти медленно. Главное — не останавливаться.',
+    'Я уже в пути, и это считается.',
+    'Даже пасмурный день — часть моего года.',
+    'Я разрешаю себе расти без спешки.',
+    'Тихие шаги тоже оставляют следы.',
+    'Сегодня достаточно сделать чуть-чуть.'
+  ]
+};
+
+function trimDot(s) { return String(s || '').replace(/[.!\s]+$/, '').replace(/^\s+/, ''); }
+function lowerFirst(s) { return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
+function upperFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+function personalPhrases(why) {
+  var w = trimDot(why);
+  if (!w) return [];
+  return [
+    'Помни, зачем: ' + lowerFirst(w) + '.',
+    'Когда хочется бросить — вспомни: ' + lowerFirst(w) + '.',
+    upperFirst(w) + '. Ради этого — один шаг сегодня.'
+  ];
+}
+function shuffled(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+var personalIdx = 0;
+function pickPhrases() {
+  var personal = personalPhrases(state.why);
+  var pool = shuffled(PHRASES[state.theme] || PHRASES.all);
+  var list = [];
+  if (personal.length) { personalIdx = Math.floor(Math.random() * personal.length); list.push(personal[personalIdx]); }
+  for (var k = 0; k < pool.length && list.length < 4; k++) list.push(pool[k]);
+  state.shown = list;
+  state.selected = 0;
+}
+function refreshPersonalPhrase() {
+  var personal = personalPhrases(state.why);
+  var hasPersonal = state.shown.length && state.shown[0] && /Помни, зачем|вспомни:|Ради этого/.test(state.shown[0]);
+  if (personal.length) {
+    if (hasPersonal) state.shown[0] = personal[personalIdx % personal.length];
+    else { state.shown.unshift(personal[personalIdx % personal.length]); if (state.shown.length > 4) state.shown.pop(); state.selected = 0; }
+  } else if (hasPersonal) {
+    state.shown.shift();
+    if (state.selected >= state.shown.length) state.selected = 0;
+  }
+}
+function currentPhrase() { return state.shown[state.selected] || 'Не идеально, а регулярно.'; }
+
+function renderThemes() {
+  var wrap = $('theme-chips');
+  if (!wrap) return;
+  var html = '';
+  for (var i = 0; i < THEMES.length; i++) {
+    var t = THEMES[i];
+    html += '<button type="button" onclick="setTheme(\'' + t.id + '\')" class="chip shrink-0 rounded-full border border-card-border bg-canvas px-3.5 py-2 text-[13px] font-medium flex items-center gap-1.5' + (t.id === state.theme ? ' active' : '') + '"><i data-lucide="' + t.icon + '" class="w-3.5 h-3.5"></i>' + t.name + '</button>';
+  }
+  wrap.innerHTML = html;
+  refreshIcons();
+}
+function renderPhrases() {
+  var list = $('phrase-list');
+  if (!list) return;
+  var html = '';
+  for (var i = 0; i < state.shown.length; i++) {
+    var sel = i === state.selected;
+    html += '<div class="phrase-card shuffle-anim rounded-[16px] border border-card-border bg-canvas flex items-stretch overflow-hidden' + (sel ? ' active' : '') + '" style="animation-delay:' + (i * 50) + 'ms">' +
+      '<button type="button" onclick="selectPhrase(' + i + ')" class="flex-1 min-w-0 text-left px-4 py-3.5 flex items-start gap-3">' +
+      '<span class="mt-1 w-4 h-4 shrink-0 rounded-full border-2 ' + (sel ? 'border-primary bg-primary' : 'border-card-border') + '"></span>' +
+      '<span class="min-w-0 text-[15px] leading-snug break-words">' + esc(state.shown[i]) + '</span></button>' +
+      '<button type="button" onclick="copyPhrase(' + i + ', this)" class="shrink-0 w-12 border-l border-card-border flex items-center justify-center text-text-muted" aria-label="Копировать фразу"><i data-lucide="copy" class="w-4 h-4"></i></button>' +
+      '</div>';
+  }
+  list.innerHTML = html;
+  refreshIcons();
+}
+function setTheme(id) {
+  state.theme = id;
+  safeHaptic('selection');
+  pickPhrases(); renderThemes(); renderPhrases(); renderAllArt();
+}
+function morePhrases() {
+  safeHaptic('light');
+  pickPhrases(); renderPhrases(); renderAllArt();
+}
+function selectPhrase(i) {
+  state.selected = i;
+  safeHaptic('selection');
+  renderPhrases(); renderAllArt();
+}
+function copyPhrase(i, btn) {
+  var text = state.shown[i] || '';
+  function done(ok) {
+    safeHaptic(ok ? 'success' : 'error');
+    if (btn) {
+      btn.innerHTML = ok ? '<i data-lucide="check" class="w-4 h-4 text-primary"></i>' : '<i data-lucide="x" class="w-4 h-4"></i>';
+      refreshIcons();
+      setTimeout(function() { if (btn) { btn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>'; refreshIcons(); } }, 1500);
+    }
+  }
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(text).then(function() { done(true); }, function() { done(fallbackCopy(text)); });
+    } else { done(fallbackCopy(text)); }
+  } catch (e) { done(false); }
+}
+function fallbackCopy(text) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'absolute'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) { return false; }
+}
+
+var whyTimer = null;
+function setWhy(val, source) {
+  state.why = String(val || '').trim();
+  var a = $('why-art'), m = $('why-main');
+  if (a && source !== 'why-art') a.value = val;
+  if (m && source !== 'why-main') m.value = val;
+  var rw = $('rem-why'); if (rw) rw.textContent = state.why || '…';
+  if (whyTimer) clearTimeout(whyTimer);
+  whyTimer = setTimeout(function() { refreshPersonalPhrase(); renderPhrases(); renderAllArt(); }, 280);
+}
+
+/* ===================== WALLPAPER ART ===================== */
+var ART_STYLES = [
+  { id: 'dawn', name: 'Рассвет', light: false },
+  { id: 'peaks', name: 'Горы', light: false },
+  { id: 'night', name: 'Ночь', light: false },
+  { id: 'aqua', name: 'Акварель', light: true },
+  { id: 'waves', name: 'Волны', light: false },
+  { id: 'poster', name: 'Постер', light: true },
+  { id: 'photo', name: 'Своё фото', light: false }
+];
+var SERIF = '"Cormorant Garamond", Georgia, serif';
+var DISPLAY = 'Unbounded, sans-serif';
+var SANS = 'Onest, sans-serif';
+
+function getStyle(id) { for (var i = 0; i < ART_STYLES.length; i++) if (ART_STYLES[i].id === id) return ART_STYLES[i]; return ART_STYLES[0]; }
+function makeRng(seed) {
+  var a = (seed >>> 0) || 1;
+  return function() {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    var t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hexToRgb(h) { var n = parseInt(h.replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function mixHex(a, b, t) {
+  var x = hexToRgb(a), y = hexToRgb(b);
+  return 'rgb(' + Math.round(x[0] + (y[0] - x[0]) * t) + ',' + Math.round(x[1] + (y[1] - x[1]) * t) + ',' + Math.round(x[2] + (y[2] - x[2]) * t) + ')';
+}
+function rgba(rgb, a) { return 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a + ')'; }
+
+var NOISE = null;
+function getNoise() {
+  if (NOISE) return NOISE;
+  try {
+    var c = document.createElement('canvas');
+    c.width = 180; c.height = 180;
+    var x = c.getContext('2d');
+    var img = x.createImageData(180, 180);
+    for (var i = 0; i < img.data.length; i += 4) {
+      var v = Math.floor(Math.random() * 255);
+      img.data[i] = v; img.data[i + 1] = v; img.data[i + 2] = v; img.data[i + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    NOISE = c;
+  } catch (e) { NOISE = null; }
+  return NOISE;
+}
+function grain(ctx, alpha) {
+  var n = getNoise();
+  if (!n) return;
+  try {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.fillStyle = ctx.createPattern(n, 'repeat');
+    ctx.fillRect(0, 0, 1080, 1920);
+    ctx.restore();
+  } catch (e) {}
+}
+function glow(ctx, x, y, r, rgb, a) {
+  var g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, rgba(rgb, a));
+  g.addColorStop(1, rgba(rgb, 0));
+  ctx.fillStyle = g;
+  ctx.fillRect(x - r, y - r, r * 2, r * 2);
+}
+function vGrad(ctx, stops) {
+  var g = ctx.createLinearGradient(0, 0, 0, 1920);
+  for (var i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 1080, 1920);
+}
+function wrapText(ctx, text, maxW) {
+  var words = String(text).split(' '), lines = [], line = '';
+  for (var i = 0; i < words.length; i++) {
+    var test = line ? line + ' ' + words[i] : words[i];
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = words[i]; } else line = test;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+/* Fits text into maxLines by shrinking the font, then draws it. Returns bottom y. */
+function drawPhrase(ctx, text, o) {
+  var size = o.size, lines;
+  while (true) {
+    ctx.font = o.font(size);
+    lines = wrapText(ctx, text, o.maxW);
+    if (lines.length <= o.maxLines || size <= o.min) break;
+    size -= 4;
+  }
+  if (lines.length > o.maxLines) { lines = lines.slice(0, o.maxLines); lines[o.maxLines - 1] += '…'; }
+  var lh = size * (o.lh || 1.12);
+  var y = o.anchor === 'center' ? o.y - (lines.length * lh) / 2 + size * 0.8 : o.y + size * 0.8;
+  ctx.save();
+  ctx.textAlign = o.align || 'center';
+  ctx.fillStyle = o.color;
+  if (o.shadow) { ctx.shadowColor = o.shadow; ctx.shadowBlur = 40; ctx.shadowOffsetY = 4; }
+  for (var i = 0; i < lines.length; i++) { ctx.fillText(lines[i], o.x, y); y += lh; }
+  ctx.restore();
+  return y - lh + size * 0.3;
+}
+function label(ctx, text, x, y, color, align, size) {
+  ctx.save();
+  ctx.font = '500 ' + (size || 28) + 'px ' + SANS;
+  ctx.fillStyle = color;
+  ctx.textAlign = align || 'center';
+  var spaced = text.split('').join(' ');
+  ctx.fillText(spaced, x, y);
+  ctx.restore();
+}
+
+/* ---- Style: Рассвет над водой ---- */
+function artDawn(ctx, rnd, phrase) {
+  vGrad(ctx, [[0, '#0D0F22'], [0.28, '#25296A'], [0.47, '#6D63C9'], [0.62, '#E58C86'], [0.74, '#F8C99A'], [0.775, '#FFE7C2']]);
+  var hz = 1920 * 0.775;
+  for (var i = 0; i < 6; i++) glow(ctx, rnd() * 1080, 200 + rnd() * 900, 260 + rnd() * 260, i % 2 ? [124, 140, 255] : [198, 244, 50], 0.07 + rnd() * 0.06);
+  var sx = 540 + (rnd() - 0.5) * 260;
+  glow(ctx, sx, hz - 40, 720, [255, 214, 160], 0.55);
+  glow(ctx, sx, hz - 40, 300, [255, 244, 220], 0.9);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, 1080, hz); ctx.clip();
+  ctx.fillStyle = '#FFF6E4';
+  ctx.beginPath(); ctx.arc(sx, hz + 20, 150, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  for (var c = 0; c < 4; c++) {
+    var cy = 1920 * (0.5 + rnd() * 0.18), cx = rnd() * 1080, cw = 300 + rnd() * 420;
+    ctx.fillStyle = 'rgba(255,214,200,' + (0.10 + rnd() * 0.10) + ')';
+    ctx.beginPath(); ctx.ellipse(cx, cy, cw, 16 + rnd() * 18, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  var wg = ctx.createLinearGradient(0, hz, 0, 1920);
+  wg.addColorStop(0, '#3A3A86'); wg.addColorStop(0.5, '#1C1E4A'); wg.addColorStop(1, '#0B0C1C');
+  ctx.fillStyle = wg; ctx.fillRect(0, hz, 1080, 1920 - hz);
+  ctx.lineCap = 'round';
+  for (var r = 0; r < 70; r++) {
+    var t = rnd(), ry = hz + 8 + Math.pow(t, 1.6) * (1920 - hz - 60);
+    var spread = 40 + Math.pow(t, 1.2) * 420;
+    var rx = sx + (rnd() - 0.5) * spread * 2;
+    var len = 20 + rnd() * 90 * (1 - t * 0.5);
+    ctx.strokeStyle = 'rgba(255,226,180,' + (0.55 - t * 0.45) + ')';
+    ctx.lineWidth = 3 + rnd() * 4;
+    ctx.beginPath(); ctx.moveTo(rx - len / 2, ry); ctx.lineTo(rx + len / 2, ry); ctx.stroke();
+  }
+  label(ctx, 'МОЁ  «ЗАЧЕМ»', 540, 740, 'rgba(255,240,220,.75)', 'center', 28);
+  drawPhrase(ctx, phrase, { font: function(s) { return 'italic 600 ' + s + 'px ' + SERIF; }, size: 104, min: 64, maxW: 880, maxLines: 4, x: 540, y: 790, color: '#FFF8EC', shadow: 'rgba(20,10,60,.45)', lh: 1.08 });
+  grain(ctx, 0.10);
+}
+
+/* ---- Style: Горы в тумане ---- */
+function ridge(rnd, base, amp, step) {
+  var p1 = rnd() * 10, p2 = rnd() * 10, p3 = rnd() * 10;
+  var f1 = 0.004 + rnd() * 0.003, f2 = 0.011 + rnd() * 0.006, f3 = 0.03 + rnd() * 0.02;
+  var pts = [], jag = 0;
+  for (var x = -40; x <= 1120; x += step) {
+    jag = jag * 0.6 + (rnd() - 0.5) * amp * 0.12;
+    var y = base - amp * (0.55 * Math.sin(x * f1 + p1) + 0.3 * Math.sin(x * f2 + p2) + 0.15 * Math.sin(x * f3 + p3)) + jag;
+    pts.push([x, y]);
+  }
+  return pts;
+}
+function artPeaks(ctx, rnd, phrase) {
+  vGrad(ctx, [[0, '#090B18'], [0.3, '#1C2150'], [0.52, '#4E59BE'], [0.66, '#A9B3FA'], [0.76, '#E6F4C8']]);
+  for (var s = 0; s < 120; s++) {
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.2 + rnd() * 0.6) + ')';
+    ctx.beginPath(); ctx.arc(rnd() * 1080, rnd() * 700, rnd() * 2.2 + 0.4, 0, Math.PI * 2); ctx.fill();
+  }
+  var mx = 260 + rnd() * 560, my = 1920 * 0.735;
+  glow(ctx, mx, my, 520, [236, 255, 200], 0.45);
+  ctx.fillStyle = '#F4FFDA';
+  ctx.beginPath(); ctx.arc(mx, my, 105, 0, Math.PI * 2); ctx.fill();
+  var layers = 5;
+  for (var l = 0; l < layers; l++) {
+    var t = l / (layers - 1);
+    var base = 1920 * (0.66 + t * 0.2);
+    var pts = ridge(rnd, base, 190 - t * 70, 16);
+    ctx.fillStyle = mixHex('#8D98EE', '#07080E', Math.pow(t, 0.75));
+    ctx.beginPath(); ctx.moveTo(-40, 1920);
+    for (var i = 0; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.lineTo(1120, 1920); ctx.closePath(); ctx.fill();
+    if (l < layers - 1) {
+      var fg = ctx.createLinearGradient(0, base - 60, 0, base + 160);
+      fg.addColorStop(0, 'rgba(230,240,255,0)');
+      fg.addColorStop(0.5, 'rgba(230,240,255,' + (0.16 - t * 0.08) + ')');
+      fg.addColorStop(1, 'rgba(230,240,255,0)');
+      ctx.fillStyle = fg; ctx.fillRect(0, base - 60, 1080, 220);
+    }
+  }
+  label(ctx, 'ШАГ  ЗА  ШАГОМ  ·  2027', 540, 760, 'rgba(230,236,255,.7)', 'center', 26);
+  drawPhrase(ctx, phrase, { font: function(s) { return 'italic 600 ' + s + 'px ' + SERIF; }, size: 100, min: 62, maxW: 880, maxLines: 4, x: 540, y: 800, color: '#F7F9FF', shadow: 'rgba(10,12,40,.5)', lh: 1.08 });
+  grain(ctx, 0.08);
+}
+
+/* ---- Style: Ночь и полумесяц ---- */
+function artNight(ctx, rnd, phrase) {
+  ctx.fillStyle = '#07080F'; ctx.fillRect(0, 0, 1080, 1920);
+  var g = ctx.createRadialGradient(540, 760, 0, 540, 760, 1300);
+  g.addColorStop(0, '#1F2552'); g.addColorStop(0.55, '#0E1129'); g.addColorStop(1, '#05060C');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 1080, 1920);
+  var ang = -0.9 + rnd() * 0.4;
+  for (var n = 0; n < 9; n++) {
+    var tt = rnd();
+    glow(ctx, 540 + Math.cos(ang) * (tt - 0.5) * 1800, 960 + Math.sin(ang) * (tt - 0.5) * 1800, 220 + rnd() * 200, n % 2 ? [124, 140, 255] : [190, 120, 220], 0.07 + rnd() * 0.05);
+  }
+  for (var s = 0; s < 520; s++) {
+    var band = rnd() < 0.55, x, y;
+    if (band) { var u = rnd() - 0.5, v = (rnd() - 0.5) * 260; x = 540 + Math.cos(ang) * u * 2000 - Math.sin(ang) * v; y = 960 + Math.sin(ang) * u * 2000 + Math.cos(ang) * v; }
+    else { x = rnd() * 1080; y = rnd() * 1700; }
+    var r = rnd() < 0.96 ? rnd() * 1.6 + 0.4 : rnd() * 2.5 + 2;
+    ctx.fillStyle = 'rgba(240,244,255,' + (0.25 + rnd() * 0.75) + ')';
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    if (r > 2.6) {
+      ctx.strokeStyle = 'rgba(240,244,255,.35)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(x - r * 6, y); ctx.lineTo(x + r * 6, y); ctx.moveTo(x, y - r * 6); ctx.lineTo(x, y + r * 6); ctx.stroke();
+    }
+  }
+  var mx = 760 + (rnd() - 0.5) * 120, my = 760;
+  glow(ctx, mx, my, 420, [232, 247, 190], 0.28);
+  try {
+    var mc = document.createElement('canvas'); mc.width = 400; mc.height = 400;
+    var m = mc.getContext('2d');
+    var mg = m.createRadialGradient(170, 170, 20, 200, 200, 150);
+    mg.addColorStop(0, '#FBFFE9'); mg.addColorStop(1, '#DCEFA6');
+    m.fillStyle = mg; m.beginPath(); m.arc(200, 200, 130, 0, Math.PI * 2); m.fill();
+    m.globalCompositeOperation = 'destination-out';
+    m.beginPath(); m.arc(258, 168, 122, 0, Math.PI * 2); m.fill();
+    ctx.drawImage(mc, mx - 200, my - 200);
+  } catch (e) {}
+  ctx.fillStyle = '#04050A';
+  var pts = ridge(rnd, 1920 * 0.93, 50, 20);
+  ctx.beginPath(); ctx.moveTo(-40, 1920);
+  for (var i = 0; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.lineTo(1120, 1920); ctx.closePath(); ctx.fill();
+  label(ctx, 'ДЛЯ  СЕБЯ  ·  2027', 540, 1080, 'rgba(220,236,180,.7)', 'center', 26);
+  drawPhrase(ctx, phrase, { font: function(s) { return 'italic 600 ' + s + 'px ' + SERIF; }, size: 100, min: 62, maxW: 860, maxLines: 4, x: 540, y: 1120, color: '#EEF7D2', shadow: 'rgba(0,0,0,.6)', lh: 1.08 });
+  grain(ctx, 0.09);
+}
+
+/* ---- Style: Акварель ---- */
+function wcPoly(rnd, cx, cy, r, n) {
+  var pts = [];
+  for (var i = 0; i < n; i++) {
+    var a = (i / n) * Math.PI * 2;
+    var rr = r * (0.75 + rnd() * 0.5);
+    pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+  }
+  return pts;
+}
+function deform(rnd, pts, amt) {
+  var out = [];
+  for (var i = 0; i < pts.length; i++) {
+    var a = pts[i], b = pts[(i + 1) % pts.length];
+    out.push(a);
+    var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    var dx = b[0] - a[0], dy = b[1] - a[1];
+    var len = Math.sqrt(dx * dx + dy * dy) || 1;
+    var off = (rnd() - 0.5) * 2 * amt * len * 0.5;
+    out.push([mx - dy / len * off, my + dx / len * off]);
+  }
+  return out;
+}
+function wcBlob(ctx, rnd, cx, cy, r, rgb) {
+  var base = deform(rnd, deform(rnd, wcPoly(rnd, cx, cy, r, 10), 0.6), 0.5);
+  glow(ctx, cx, cy, r * 1.25, rgb, 0.16);
+  for (var l = 0; l < 44; l++) {
+    var p = deform(rnd, deform(rnd, deform(rnd, base, 0.55), 0.5), 0.4);
+    ctx.fillStyle = rgba(rgb, l % 7 === 0 ? 0.05 : 0.02);
+    ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]);
+    for (var i = 1; i < p.length; i++) ctx.lineTo(p[i][0], p[i][1]);
+    ctx.closePath(); ctx.fill();
+  }
+  for (var d = 0; d < 40; d++) {
+    var a = rnd() * Math.PI * 2, rr = r * (0.2 + rnd() * 1.1);
+    ctx.fillStyle = rgba(rgb, 0.08 + rnd() * 0.12);
+    ctx.beginPath(); ctx.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, rnd() * 5 + 1, 0, Math.PI * 2); ctx.fill();
+  }
+}
+function artAqua(ctx, rnd, phrase) {
+  vGrad(ctx, [[0, '#F6F1E8'], [1, '#EEE6D8']]);
+  var palette = [[124, 140, 255], [178, 222, 70], [242, 160, 132], [116, 196, 184], [196, 166, 236]];
+  var spots = [[860, 380, 330], [180, 1600, 380], [960, 1500, 220], [120, 520, 200], [640, 1840, 260]];
+  for (var i = 0; i < spots.length; i++) {
+    var sp = spots[i];
+    wcBlob(ctx, rnd, sp[0] + (rnd() - 0.5) * 120, sp[1] + (rnd() - 0.5) * 120, sp[2] * (0.85 + rnd() * 0.3), palette[(i + Math.floor(rnd() * 5)) % palette.length]);
+  }
+  label(ctx, 'МОЙ  2027', 110, 790, 'rgba(60,62,90,.55)', 'left', 26);
+  var bottom = drawPhrase(ctx, phrase, { font: function(s) { return 'italic 600 ' + s + 'px ' + SERIF; }, size: 104, min: 64, maxW: 860, maxLines: 4, x: 110, y: 830, color: '#262A40', align: 'left', lh: 1.08 });
+  ctx.strokeStyle = 'rgba(124,140,255,.75)'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(112, bottom + 40);
+  ctx.bezierCurveTo(260, bottom + 18, 380, bottom + 62, 520, bottom + 34);
+  ctx.stroke();
+  ctx.font = 'italic 500 44px ' + SERIF; ctx.fillStyle = 'rgba(38,42,64,.6)'; ctx.textAlign = 'left';
+  ctx.fillText('— обещание себе', 112, bottom + 120);
+  grain(ctx, 0.16);
+}
+
+/* ---- Style: Волны ---- */
+function artWaves(ctx, rnd, phrase) {
+  ctx.fillStyle = '#0B0D11'; ctx.fillRect(0, 0, 1080, 1920);
+  glow(ctx, 120, 1700, 900, [198, 244, 50], 0.12);
+  glow(ctx, 980, 300, 900, [124, 140, 255], 0.16);
+  var f1 = 0.004 + rnd() * 0.002, f2 = 0.009 + rnd() * 0.004, ph = rnd() * 6;
+  var count = 54;
+  for (var i = 0; i < count; i++) {
+    var t = i / (count - 1);
+    var y0 = 1920 * 0.56 + i * 15;
+    var amp = 90 + 140 * Math.sin(t * Math.PI);
+    var g = ctx.createLinearGradient(0, 0, 1080, 0);
+    var a = 0.15 + 0.65 * Math.sin(t * Math.PI);
+    g.addColorStop(0, 'rgba(124,140,255,' + a + ')');
+    g.addColorStop(0.55, 'rgba(170,200,160,' + a * 0.9 + ')');
+    g.addColorStop(1, 'rgba(198,244,50,' + a + ')');
+    ctx.strokeStyle = g; ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    for (var x = -20; x <= 1100; x += 12) {
+      var y = y0 + Math.sin(x * f1 + ph + t * 2.4) * amp + Math.sin(x * f2 + ph * 1.7 + t * 4) * amp * 0.35;
+      if (x === -20) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  label(ctx, 'МОЁ  «ЗАЧЕМ»', 540, 740, 'rgba(198,244,50,.85)', 'center', 26);
+  drawPhrase(ctx, phrase, { font: function(s) { return '600 ' + s + 'px ' + DISPLAY; }, size: 66, min: 42, maxW: 860, maxLines: 5, x: 540, y: 790, color: '#F2F4F7', lh: 1.22 });
+  grain(ctx, 0.07);
+}
+
+/* ---- Style: Постер 2027 ---- */
+function artPoster(ctx, rnd, phrase) {
+  ctx.fillStyle = '#C6F432'; ctx.fillRect(0, 0, 1080, 1920);
+  ctx.strokeStyle = 'rgba(15,17,20,.10)'; ctx.lineWidth = 2;
+  for (var gx = 135; gx < 1080; gx += 135) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, 1920); ctx.stroke(); }
+  ctx.fillStyle = '#0F1114';
+  ctx.font = '800 640px ' + DISPLAY;
+  ctx.textAlign = 'left';
+  ctx.fillText('20', -40, 1430);
+  ctx.fillText('27', -40, 1980);
+  var cx = 820 + (rnd() - 0.5) * 80, cy = 1180 + (rnd() - 0.5) * 80;
+  ctx.fillStyle = '#7C8CFF';
+  ctx.beginPath(); ctx.arc(cx, cy, 120, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#0F1114';
+  ctx.save(); ctx.translate(cx, cy);
+  for (var k = 0; k < 8; k++) { ctx.rotate(Math.PI / 4); ctx.fillRect(-6, -60, 12, 120); }
+  ctx.restore();
+  label(ctx, 'ЦЕЛИ  НА  ГОД', 90, 740, 'rgba(15,17,20,.7)', 'left', 26);
+  drawPhrase(ctx, phrase, { font: function(s) { return '700 ' + s + 'px ' + SANS; }, size: 70, min: 44, maxW: 900, maxLines: 4, x: 90, y: 780, color: '#0F1114', align: 'left', lh: 1.15 });
+  grain(ctx, 0.12);
+}
+
+/* ---- Style: Своё фото ---- */
+function artPhoto(ctx, rnd, phrase) {
+  var img = state.photo;
+  if (!img) {
+    vGrad(ctx, [[0, '#1A1E26'], [1, '#0F1114']]);
+    ctx.save();
+    ctx.setLineDash([22, 18]); ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(198,244,50,.6)';
+    ctx.strokeRect(150, 520, 780, 880);
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#C6F432'; ctx.lineWidth = 14; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(540, 860); ctx.lineTo(540, 1060); ctx.moveTo(440, 960); ctx.lineTo(640, 960); ctx.stroke();
+    ctx.font = '600 52px ' + SANS; ctx.fillStyle = '#F2F4F7'; ctx.textAlign = 'center';
+    ctx.fillText('Ваше фото', 540, 1200);
+    ctx.font = '400 38px ' + SANS; ctx.fillStyle = '#8A919C';
+    ctx.fillText('нажмите, чтобы загрузить', 540, 1260);
+    ctx.restore();
+    return;
+  }
+  var iw = img.width, ih = img.height;
+  var sc = Math.max(1080 / iw, 1920 / ih);
+  var dw = iw * sc, dh = ih * sc;
+  ctx.drawImage(img, (1080 - dw) / 2 + state.photoShift * (dw - 1080) / 2, (1920 - dh) / 2, dw, dh);
+  var tone = state.photoTone;
+  var top = ctx.createLinearGradient(0, 0, 0, 760);
+  top.addColorStop(0, 'rgba(8,10,16,' + (0.45 * tone) + ')'); top.addColorStop(1, 'rgba(8,10,16,0)');
+  ctx.fillStyle = top; ctx.fillRect(0, 0, 1080, 760);
+  var mid = ctx.createLinearGradient(0, 600, 0, 1500);
+  mid.addColorStop(0, 'rgba(8,10,16,0)');
+  mid.addColorStop(0.35, 'rgba(8,10,16,' + (0.55 * tone) + ')');
+  mid.addColorStop(0.75, 'rgba(8,10,16,' + (0.45 * tone) + ')');
+  mid.addColorStop(1, 'rgba(8,10,16,0)');
+  ctx.fillStyle = mid; ctx.fillRect(0, 600, 1080, 900);
+  var bot = ctx.createLinearGradient(0, 1600, 0, 1920);
+  bot.addColorStop(0, 'rgba(8,10,16,0)'); bot.addColorStop(1, 'rgba(8,10,16,' + (0.4 * tone) + ')');
+  ctx.fillStyle = bot; ctx.fillRect(0, 1600, 1080, 320);
+  label(ctx, 'МОЁ  «ЗАЧЕМ»  ·  2027', 540, 760, 'rgba(255,255,255,.8)', 'center', 26);
+  drawPhrase(ctx, phrase, { font: function(s) { return 'italic 600 ' + s + 'px ' + SERIF; }, size: 104, min: 64, maxW: 880, maxLines: 4, x: 540, y: 800, color: '#FFFFFF', shadow: 'rgba(0,0,0,.55)', lh: 1.08 });
+  grain(ctx, 0.06);
+}
+
+var ART_FN = { dawn: artDawn, peaks: artPeaks, night: artNight, aqua: artAqua, waves: artWaves, poster: artPoster, photo: artPhoto };
+
+function pickPhoto() {
+  var inp = $('wp-file');
+  if (inp) { inp.value = ''; inp.click(); }
+}
+function onPhotoChosen(input) {
+  var f = input && input.files && input.files[0];
+  var st = $('wp-main-status');
+  if (!f) return;
+  if (!/^image\//.test(f.type)) { setStatus(st, 'Это не картинка — выберите фото (JPG, PNG, HEIC).'); safeHaptic('error'); return; }
+  setStatus(st, 'Загружаем фото…');
+  var reader = new FileReader();
+  reader.onload = function() {
+    var im = new Image();
+    im.onload = function() {
+      var max = 2000, k = Math.min(1, max / Math.max(im.width, im.height));
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      state.photo = cv;
+      state.photoShift = 0;
+      var ph = $('photo-tools'); if (ph) ph.classList.remove('hidden');
+      var sh = $('photo-shift'); if (sh) sh.value = 0;
+      var st2 = $('wp-main-status'); if (st2) st2.classList.add('hidden');
+      state.wpStyle = 'photo';
+      safeHaptic('success');
+      renderStyleRow(); renderMainArt(true); renderThumbs();
+    };
+    im.onerror = function() { setStatus(st, 'Не получилось открыть фото — попробуйте другое (JPG или PNG).'); safeHaptic('error'); };
+    im.src = reader.result;
+  };
+  reader.onerror = function() { setStatus(st, 'Не получилось прочитать файл.'); };
+  reader.readAsDataURL(f);
+}
+function setPhotoTone(v) { state.photoTone = Number(v) / 100; renderMainArt(false); }
+function setPhotoShift(v) { state.photoShift = Number(v) / 100; renderMainArt(false); }
+
+function drawArt(c, styleId, phrase, seed) {
+  if (!c || !c.getContext) return;
+  var ctx = c.getContext('2d');
+  ctx.save();
+  ctx.setTransform(c.width / 1080, 0, 0, c.height / 1920, 0, 0);
+  ctx.clearRect(0, 0, 1080, 1920);
+  var fn = ART_FN[styleId] || artDawn;
+  var idx = 0;
+  for (var i = 0; i < ART_STYLES.length; i++) if (ART_STYLES[i].id === styleId) idx = i;
+  try { fn(ctx, makeRng((seed || 1) * 97 + idx * 13), phrase || 'Не идеально, а регулярно.'); } catch (e) {}
+  ctx.restore();
+}
+/* Backward-compatible wrapper */
+function renderWallpaper(c) { drawArt(c, state.wpStyle, currentPhrase(), state.seed); }
+
+function renderStyleRow() {
+  var row = $('style-row');
+  if (!row) return;
+  if (!row.getAttribute('data-built')) {
+    var html = '';
+    for (var i = 0; i < ART_STYLES.length; i++) {
+      var s = ART_STYLES[i];
+      html += '<button type="button" onclick="setArtStyle(\'' + s.id + '\')" class="snap-start shrink-0 flex flex-col items-center gap-1.5" aria-label="Стиль ' + s.name + '">' +
+        '<span class="style-thumb block w-[84px] rounded-[16px] overflow-hidden bg-surface' + (s.id === state.wpStyle ? ' active' : '') + '" data-style="' + s.id + '" style="aspect-ratio:9/16">' +
+        '<canvas width="216" height="384" class="art-thumb w-full h-full block" data-style="' + s.id + '"></canvas></span>' +
+        '<span class="text-[11px] text-text-muted">' + s.name + '</span></button>';
+    }
+    row.innerHTML = html;
+    row.setAttribute('data-built', '1');
+  }
+  var thumbs = row.querySelectorAll('.style-thumb');
+  for (var j = 0; j < thumbs.length; j++) thumbs[j].classList.toggle('active', thumbs[j].getAttribute('data-style') === state.wpStyle);
+}
+function renderThumbs() {
+  var cs = document.querySelectorAll('.art-thumb');
+  for (var i = 0; i < cs.length; i++) drawArt(cs[i], cs[i].getAttribute('data-style'), currentPhrase(), state.seed);
+}
+function updateLockOverlay() {
+  var st = getStyle(state.wpStyle);
+  var ov = $('lock-overlay'), bt = $('lock-bottom');
+  var col = st.light ? '#1A1D24' : '#FFFFFF';
+  if (ov) { ov.style.color = col; ov.style.textShadow = st.light ? 'none' : '0 1px 12px rgba(0,0,0,.25)'; }
+  if (bt) bt.style.color = col;
+  var nm = $('style-name'); if (nm) nm.textContent = st.name;
+}
+function updateLockClock() {
+  var d = new Date();
+  var t = $('lock-time'); if (t) t.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  var dt = $('lock-date');
+  if (dt) {
+    try { dt.textContent = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) {}
+  }
+}
+function renderMainArt(animate) {
+  var c = $('wp-main');
+  drawArt(c, state.wpStyle, currentPhrase(), state.seed);
+  if (animate && c) { c.classList.remove('art-swap'); void c.offsetWidth; c.classList.add('art-swap'); }
+  drawArt($('wp-thumb'), state.wpStyle, currentPhrase(), state.seed);
+  var full = $('wp-full'); if (full) drawArt(full, state.wpStyle, currentPhrase(), state.seed);
+  updateLockOverlay();
+}
+function renderAllArt() { renderMainArt(false); renderThumbs(); }
+function setArtStyle(id) {
+  if (id === 'photo' && !state.photo) { pickPhoto(); return; }
+  var tools = $('photo-tools'); if (tools) tools.classList.toggle('hidden', id !== 'photo');
+  if (state.wpStyle === id) return;
+  state.wpStyle = id;
+  safeHaptic('selection');
+  renderStyleRow();
+  renderMainArt(true);
+}
+function rerollArt() {
+  state.seed = Math.floor(Math.random() * 100000) + 1;
+  safeHaptic('light');
+  renderMainArt(true);
+  renderThumbs();
+}
+function initMotivation() {
+  var a = $('why-art');
+  if (a) a.addEventListener('input', function() { setWhy(this.value, 'why-art'); });
+  pickPhrases();
+  renderThemes();
+  renderPhrases();
+  renderStyleRow();
+  renderAllArt();
+  updateLockClock();
+  setInterval(updateLockClock, 30000);
+  try {
+    if (document.fonts && typeof document.fonts.load === 'function') {
+      Promise.all([
+        document.fonts.load('italic 600 60px "Cormorant Garamond"'),
+        document.fonts.load('italic 500 40px "Cormorant Garamond"'),
+        document.fonts.load('800 60px Unbounded'),
+        document.fonts.load('600 60px Unbounded'),
+        document.fonts.load('700 40px Onest'),
+        document.fonts.load('500 30px Onest')
+      ]).then(function() { renderAllArt(); }, function() {});
+    }
+  } catch (e) {}
+}
+
+function setStatus(st, html) { if (st) { st.innerHTML = html; st.classList.remove('hidden'); } }
+function localDownload(c, name, st) {
+  try {
+    var url = c.toDataURL('image/png');
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    safeHaptic('success');
+    setStatus(st, 'Готово! Если файл не скачался — <button type="button" onclick="showSaveImage(\'' + c.id + '\')" class="underline underline-offset-2 text-text-main">откройте картинку</button> и удерживайте её, чтобы сохранить.');
+  } catch (e) {
+    showSaveImage(c.id);
+  }
+}
+/* Внутри Notibot: загружаем картинку через SDK и открываем ссылку на неё —
+   так файл можно сохранить даже там, где фрейм запрещает скачивание. */
+function downloadCanvas(id, name, statusId) {
+  var c = $(id), st = $(statusId);
+  if (!c) return;
+  if (hasBridge() && typeof window.notibot.uploadFile === 'function' && c.toBlob) {
+    setStatus(st, 'Готовим картинку…');
+    c.toBlob(function(blob) {
+      if (!blob) { showSaveImage(id); return; }
+      var file;
+      try { file = new File([blob], name, { type: 'image/png' }); } catch (e) { file = blob; }
+      var done = false;
+      var timer = setTimeout(function() { if (!done) { done = true; showSaveImage(id); setStatus(st, 'Удерживайте картинку, чтобы сохранить её в галерею.'); } }, 12000);
+      try {
+        Promise.resolve(window.notibot.uploadFile(file)).then(function(res) {
+          if (done) return;
+          done = true; clearTimeout(timer);
+          var u = res && (res.url || (res.data && res.data.url));
+          if (!u) { showSaveImage(id); return; }
+          safeHaptic('success');
+          openExternal(u);
+          setStatus(st, 'Картинка открыта в новом окне — нажмите «Поделиться» → «Сохранить изображение». <button type="button" onclick="showSaveImage(\'' + id + '\')" class="underline underline-offset-2 text-text-main">Не открылась?</button>');
+        }, function() {
+          if (done) return;
+          done = true; clearTimeout(timer);
+          showSaveImage(id);
+          setStatus(st, 'Удерживайте картинку, чтобы сохранить её в галерею.');
+        });
+      } catch (e) { done = true; clearTimeout(timer); showSaveImage(id); }
+    }, 'image/png');
+    return;
+  }
+  localDownload(c, name, st);
+}
+function showSaveImage(id) {
+  var c = $(id);
+  if (!c) return;
+  var url = '';
+  try { url = c.toDataURL('image/png'); } catch (e) { return; }
+  var html =
+    '<div class="text-center text-[13px] text-text-muted mb-4">Удерживайте картинку → «Сохранить изображение»</div>' +
+    '<img src="' + url + '" alt="Ваши обои 2027" class="mx-auto w-full max-w-[300px] rounded-[24px] border border-card-border shadow-[0_24px_60px_rgba(0,0,0,.6)] select-auto" style="-webkit-touch-callout:default" />' +
+    '<button type="button" onclick="closeFs()" class="mt-5 w-full rounded-[16px] border border-card-border font-semibold py-3.5">Готово</button>';
+  openFs(html);
+}
+
+/* ===================== FULLSCREEN DIALOG ===================== */
+function openFs(html, dotsHtml) {
+  var fs = $('fs-dialog');
+  if (!fs) return;
+  var c = $('fs-content'); if (c) { c.innerHTML = html; c.scrollTop = 0; }
+  var d = $('fs-dots'); if (d) d.innerHTML = dotsHtml || '';
+  fs.classList.remove('hidden');
+  var panel = fs.querySelector('.fs-panel');
+  setTimeout(function() { fs.classList.remove('opacity-0'); if (panel) panel.classList.remove('translate-y-6'); }, 10);
+  setScrollLock(true);
+  var tb = $('thumb-bar'); if (tb) tb.classList.add('off');
+  safeHaptic('medium');
+  refreshIcons();
+}
+function closeFs() {
+  var fs = $('fs-dialog');
+  if (!fs) return;
+  var panel = fs.querySelector('.fs-panel');
+  fs.classList.add('opacity-0'); if (panel) panel.classList.add('translate-y-6');
+  setTimeout(function() { fs.classList.add('hidden'); setScrollLock(false); syncThumbBar(); }, 300);
+  safeHaptic('light');
+}
+
+function openFinishPreview() {
+  var html =
+    '<div class="mx-auto w-full max-w-[320px] rounded-[28px] overflow-hidden relative" style="aspect-ratio:9/16; background: linear-gradient(160deg,#C6F432 0%, #9FD11F 55%, #7C8CFF 130%)">' +
+    '<div class="absolute inset-0 p-6 flex flex-col text-canvas">' +
+    '<div class="text-[11px] font-semibold uppercase tracking-[.16em]">Цель достигнута · 2027</div>' +
+    '<div class="mt-auto font-display font-extrabold text-[40px] leading-[.95]">Я сделала это!</div>' +
+    '<div class="mt-4 text-[12px] font-semibold uppercase tracking-wide opacity-70">Цель</div>' +
+    '<div class="font-display font-semibold text-[20px] leading-tight">Накопить 300 000 ₽</div>' +
+    '<div class="mt-4 grid grid-cols-2 gap-2"><div class="rounded-2xl bg-canvas/10 p-3"><div class="text-[11px] opacity-70">Срок</div><div class="font-semibold">12 месяцев</div></div>' +
+    '<div class="rounded-2xl bg-canvas/10 p-3"><div class="text-[11px] opacity-70">Дней в пути</div><div class="font-semibold tabnum">365</div></div></div>' +
+    '</div></div>' +
+    '<p class="mt-5 text-center text-[14px] text-text-muted">Пример карточки. Свою вы получите, когда закроете цель, — её можно сохранить и выложить в сторис.</p>' +
+    '<button type="button" onclick="closeFs();setTimeout(goToMyGoals,320)" class="mt-5 w-full rounded-[16px] bg-primary text-canvas font-semibold py-4">Поставить свою цель</button>';
+  openFs(html);
+}
+function openWallpaperPreview() {
+  var html =
+    '<div class="mx-auto w-[230px] rounded-[38px] bg-black p-2 border border-card-border shadow-[0_24px_60px_rgba(0,0,0,.6)]">' +
+    '<canvas id="wp-full" width="1080" height="1920" class="w-full rounded-[31px] block" style="aspect-ratio:9/16"></canvas></div>' +
+    '<p class="mt-5 text-center text-[14px] text-text-muted">Стиль «' + getStyle(state.wpStyle).name + '». Фразу и стиль можно поменять в блоке «Мотиватор».</p>' +
+    '<button type="button" onclick="downloadCanvas(\'wp-full\', \'oboi-2027.png\', \'wp-status\')" class="mt-5 w-full rounded-[16px] bg-primary text-canvas font-semibold py-4 flex items-center justify-center gap-2"><i data-lucide="download" class="w-5 h-5"></i>Скачать обои</button>' +
+    '<div id="wp-status" class="hidden mt-2 text-[12px] text-text-muted text-center"></div>';
+  openFs(html);
+  drawArt($('wp-full'), state.wpStyle, currentPhrase(), state.seed);
+}
+
+/* ===================== МОИ ЦЕЛИ: локальное сохранение ===================== */
+var STORE_KEY = 'goals2027_v1';
+var store = { goals: [], maxGoals: 3 };
+var expanded = {};
+
+function loadStore() {
+  try {
+    var raw = window.localStorage ? localStorage.getItem(STORE_KEY) : null;
+    if (raw) {
+      var d = JSON.parse(raw);
+      if (d && Object.prototype.toString.call(d.goals) === '[object Array]') {
+        store.goals = d.goals;
+        store.maxGoals = Math.min(5, Math.max(1, Number(d.maxGoals) || 3));
+      }
+    }
+  } catch (e) {}
+}
+function saveStore() {
+  try { if (window.localStorage) localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
+}
+function getGoal(id) { for (var i = 0; i < store.goals.length; i++) if (store.goals[i].id === id) return store.goals[i]; return null; }
+function doneCount(g) { var n = 0; for (var i = 0; i < g.stages.length; i++) if (g.stages[i].d) n++; return n; }
+function daysOnWay(g) { return Math.max(0, Math.floor((Date.now() - (g.created || Date.now())) / 86400000)); }
+
+function saveMasterGoal() {
+  var gi = $('m-goal'), wi = $('m-why'), di = $('m-deadline'), fi = $('m-first');
+  var title = gi ? gi.value.trim() : master.goal;
+  var st = $('m-save-status');
+  if (!title || title.length < 3) { masterGo(1); var err = $('m-goal-err'); if (err) err.classList.remove('hidden'); safeHaptic('error'); return; }
+  if (store.goals.length >= store.maxGoals) {
+    if (st) {
+      st.innerHTML = 'Сейчас выбрано ' + store.maxGoals + ' ' + plural(store.maxGoals, 'цель', 'цели', 'целей') + ' на год, и все места заняты. ' +
+        (store.maxGoals < 5 ? '<button type="button" onclick="raiseLimitAndSave()" class="underline underline-offset-2 text-primary font-semibold">Увеличить до ' + (store.maxGoals + 1) + ' и сохранить</button>' : 'Удалите одну из целей, чтобы добавить новую.');
+      st.classList.remove('hidden');
+    }
+    safeHaptic('warning');
+    return;
+  }
+  var stages = [];
+  if (master.mode === 'number') {
+    var per = Math.round(master.sum / master.months);
+    for (var i = 1; i <= master.months; i++) stages.push({ t: 'Этап ' + i + ': +' + fmt(per) + ' ₽', d: false });
+  } else {
+    for (var j = 0; j < master.plan.length; j++) { var t = String(master.plan[j] || '').trim(); if (t) stages.push({ t: t, d: false }); }
+  }
+  if (!stages.length) stages.push({ t: 'Сделать первый шаг', d: false });
+  var g = {
+    id: 'g' + Date.now().toString(36),
+    title: title,
+    cat: master.cat,
+    why: wi ? wi.value.trim() : master.why,
+    mode: master.mode,
+    sum: master.mode === 'number' ? master.sum : 0,
+    months: master.months,
+    deadline: di ? di.value : master.deadline,
+    first: fi ? fi.value.trim() : master.first,
+    stages: stages,
+    created: Date.now()
+  };
+  store.goals.push(g);
+  saveStore();
+  if (g.why) setWhy(g.why, 'master');
+  closeFs();
+  renderGoals();
+  safeHaptic('success');
+  fireConfetti();
+  showToast('<b>Цель сохранена.</b> Она ждёт вас в блоке «Мои цели».');
+  setTimeout(function() { var s = $('my-goals'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 350);
+}
+function raiseLimitAndSave() {
+  if (store.maxGoals < 5) { store.maxGoals++; saveStore(); syncCountButtons(); }
+  saveMasterGoal();
+}
+
+function markGoalStep(id) {
+  var g = getGoal(id);
+  if (!g) return;
+  for (var i = 0; i < g.stages.length; i++) {
+    if (!g.stages[i].d) {
+      g.stages[i].d = true;
+      saveStore(); renderGoals();
+      safeHaptic('success'); fireConfetti();
+      if (doneCount(g) === g.stages.length) setTimeout(function() { openGoalFinish(id); }, 700);
+      return;
+    }
+  }
+}
+function toggleStage(id, idx) {
+  var g = getGoal(id);
+  if (!g || !g.stages[idx]) return;
+  g.stages[idx].d = !g.stages[idx].d;
+  saveStore(); renderGoals();
+  safeHaptic(g.stages[idx].d ? 'success' : 'light');
+  if (g.stages[idx].d) fireConfetti();
+  if (doneCount(g) === g.stages.length) setTimeout(function() { openGoalFinish(id); }, 700);
+}
+function toggleExpand(id) { expanded[id] = !expanded[id]; renderGoals(); safeHaptic('selection'); }
+function deleteGoal(id, btn) {
+  if (btn && btn.getAttribute('data-confirm') !== '1') {
+    btn.setAttribute('data-confirm', '1');
+    btn.innerHTML = '<span class="text-[12px] font-semibold text-[#FF8A7A]">Удалить?</span>';
+    safeHaptic('warning');
+    setTimeout(function() { if (btn && btn.isConnected) { btn.setAttribute('data-confirm', '0'); btn.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>'; refreshIcons(); } }, 3000);
+    return;
+  }
+  var out = [];
+  for (var i = 0; i < store.goals.length; i++) if (store.goals[i].id !== id) out.push(store.goals[i]);
+  store.goals = out;
+  saveStore(); renderGoals();
+  safeHaptic('medium');
+  showToast('Цель удалена.');
+}
+function goalCalendar(id) {
+  var g = getGoal(id);
+  if (!g) return;
+  addToCalendar(g.title, state.reminder, g.deadline, g.why, 'cal-' + id);
+}
+
+function renderGoals() {
+  var sec = $('my-goals'), list = $('goals-list');
+  if (!sec || !list) return;
+  var has = store.goals.length > 0;
+  sec.classList.toggle('hidden', !has);
+  var cnt = $('goals-count'); if (cnt) cnt.textContent = store.goals.length;
+  var mx = $('goals-max'); if (mx) mx.textContent = store.maxGoals;
+  var addBtn = $('goals-add'); if (addBtn) addBtn.classList.toggle('hidden', store.goals.length >= store.maxGoals);
+  var hero = $('hero-mygoals'); if (hero) hero.classList.toggle('hidden', !has);
+  if (!has) { list.innerHTML = ''; return; }
+  var html = '';
+  for (var i = 0; i < store.goals.length; i++) {
+    var g = store.goals[i];
+    var c = getCat(g.cat);
+    var done = doneCount(g), total = g.stages.length;
+    var pct = total ? Math.round(done / total * 100) : 0;
+    var finished = total && done === total;
+    var days = daysOnWay(g);
+    var dl = g.deadline ? g.deadline.split('-').reverse().join('.') : '';
+    var from = 0, to = total;
+    if (!expanded[g.id] && total > 5) {
+      var cur = Math.min(done, total - 1);
+      from = Math.max(0, cur - 1); to = Math.min(total, from + 4);
+    }
+    var stagesHtml = '';
+    for (var k = from; k < to; k++) {
+      var s = g.stages[k];
+      stagesHtml += '<button type="button" onclick="toggleStage(\'' + g.id + '\',' + k + ')" class="w-full flex items-center gap-3 text-left py-1.5">' +
+        '<span class="w-5 h-5 shrink-0 rounded-md flex items-center justify-center ' + (s.d ? 'bg-primary text-canvas' : 'border-2 border-card-border') + '">' + (s.d ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : '') + '</span>' +
+        '<span class="min-w-0 text-[14px] break-words ' + (s.d ? 'text-text-muted line-through' : '') + '">' + esc(s.t) + '</span></button>';
+    }
+    html += '<div class="bento p-5 shuffle-anim">' +
+      '<div class="flex items-start justify-between gap-3">' +
+        '<div class="flex items-start gap-3 min-w-0">' +
+          '<span class="w-10 h-10 shrink-0 rounded-xl bg-primary/15 text-primary flex items-center justify-center"><i data-lucide="' + c.icon + '" class="w-5 h-5"></i></span>' +
+          '<div class="min-w-0"><div class="font-display font-semibold text-[17px] leading-snug break-words">' + esc(g.title) + '</div>' +
+          (dl ? '<div class="text-[12px] text-text-muted mt-0.5">до ' + dl + '</div>' : '') + '</div>' +
+        '</div>' +
+        '<button type="button" onclick="deleteGoal(\'' + g.id + '\', this)" class="shrink-0 h-9 min-w-9 px-2 rounded-full text-text-muted flex items-center justify-center" aria-label="Удалить цель"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' +
+      '</div>' +
+      (g.why ? '<div class="mt-3 text-[13px] text-secondary break-words">Зачем: «' + esc(g.why) + '»</div>' : '') +
+      '<div class="mt-4 flex items-center justify-between text-[12px] text-text-muted tabnum"><span>' +
+        (g.mode === 'number' && g.sum ? fmt(Math.round(g.sum * done / total)) + ' из ' + fmt(g.sum) + ' ₽' : done + ' из ' + total + ' ' + plural(total, 'этапа', 'этапов', 'этапов')) +
+      '</span><span class="text-text-main font-semibold">' + pct + '%</span></div>' +
+      '<div class="mt-1.5 h-2.5 rounded-full bg-canvas border border-card-border overflow-hidden"><div class="h-full rounded-full bg-primary transition-all duration-700" style="width:' + pct + '%"></div></div>' +
+      '<div class="mt-3 flex items-center gap-2 text-[13px]"><i data-lucide="flame" class="w-4 h-4 text-primary shrink-0"></i><span>' +
+        (days === 0 ? 'Сегодня — первый день пути' : 'Вы в пути уже <b class="tabnum">' + days + '</b> ' + plural(days, 'день', 'дня', 'дней')) + '</span></div>' +
+      (g.first && !done ? '<div class="mt-3 rounded-[12px] bg-canvas border border-card-border px-3 py-2.5 text-[13px] break-words"><span class="text-text-muted">На этой неделе:</span> ' + esc(g.first) + '</div>' : '') +
+      '<div class="mt-3">' + stagesHtml + '</div>' +
+      (total > 5 ? '<button type="button" onclick="toggleExpand(\'' + g.id + '\')" class="mt-1 text-[12px] font-semibold text-secondary">' + (expanded[g.id] ? 'Свернуть этапы' : 'Все этапы (' + total + ')') + '</button>' : '') +
+      (finished
+        ? '<button type="button" onclick="openGoalFinish(\'' + g.id + '\')" class="mt-4 w-full rounded-[16px] font-display font-semibold py-3.5 text-canvas flex items-center justify-center gap-2" style="background:linear-gradient(120deg,#C6F432,#7C8CFF)"><i data-lucide="party-popper" class="w-5 h-5"></i>Я сделала это! — карточка</button>'
+        : '<div class="mt-4 flex gap-2"><button type="button" onclick="markGoalStep(\'' + g.id + '\')" class="flex-1 rounded-[16px] bg-primary text-canvas font-semibold py-3.5 flex items-center justify-center gap-2 active:scale-[.98] transition"><i data-lucide="check-circle-2" class="w-5 h-5"></i>Отметить шаг</button>' +
+          '<button type="button" onclick="goalCalendar(\'' + g.id + '\')" class="w-14 shrink-0 rounded-[16px] border border-card-border flex items-center justify-center" aria-label="Напоминание в календарь"><i data-lucide="calendar-plus" class="w-5 h-5"></i></button></div>') +
+      '<div id="cal-' + g.id + '" class="hidden mt-2 text-[12px] text-text-muted"></div>' +
+    '</div>';
+  }
+  list.innerHTML = html;
+  refreshIcons();
+}
+function goToMyGoals() {
+  if (!store.goals.length) { openMaster(); return; }
+  var s = $('my-goals'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ---- Выбор количества целей ---- */
+function syncCountButtons() {
+  var btns = document.querySelectorAll('.count-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', Number(btns[i].getAttribute('data-count')) === store.maxGoals);
+  var d = $('count-desc'); if (d) d.textContent = COUNT_DESC[String(store.maxGoals)];
+}
+function choosePlanCount() {
+  var active = document.querySelector('.count-btn.active');
+  var n = active ? Number(active.getAttribute('data-count')) : 3;
+  store.maxGoals = n;
+  saveStore();
+  renderGoals();
+  safeHaptic('success');
+  if (store.goals.length < n) {
+    var left = n - store.goals.length;
+    showToast('<b>Готово: ' + n + ' ' + plural(n, 'цель', 'цели', 'целей') + ' на 2027.</b> Осталось поставить ещё ' + left + '.');
+    setTimeout(openMaster, 450);
+  } else {
+    showToast('<b>Готово: ' + n + ' ' + plural(n, 'цель', 'цели', 'целей') + ' на 2027.</b> ' + (store.goals.length > n ? 'Сейчас целей больше — лишние можно удалить.' : 'Все места заняты.'));
+    goToMyGoals();
+  }
+}
+
+/* ---- Код сохранения ---- */
+function buildSaveCode() {
+  try { return 'G27.' + btoa(unescape(encodeURIComponent(JSON.stringify(store)))); } catch (e) { return ''; }
+}
+function openSaveProgress() {
+  var code = buildSaveCode();
+  var body =
+    '<p>Прогресс хранится на этом устройстве. Чтобы не потерять его при смене телефона или очистке браузера, сохраните код — потом вставьте его в «Восстановить по коду».</p>' +
+    '<textarea id="save-code-box" readonly class="mt-4 w-full h-28 rounded-[14px] bg-canvas border border-card-border p-3 font-mono text-[11px] text-text-main/80 break-all outline-none">' + esc(code) + '</textarea>' +
+    '<div class="mt-3 grid grid-cols-2 gap-2">' +
+      '<button type="button" onclick="copySaveCode(this)" class="rounded-[14px] bg-primary text-canvas py-3 font-semibold text-[14px] flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i><span>Копировать</span></button>' +
+      '<button type="button" onclick="downloadSaveFile()" class="rounded-[14px] border border-card-border py-3 font-semibold text-[14px] flex items-center justify-center gap-2"><i data-lucide="file-down" class="w-4 h-4"></i>Файлом</button>' +
+    '</div>' +
+    '<div id="save-status" class="hidden mt-2 text-[12px] text-text-muted"></div>' +
+    '<p class="mt-4 text-[13px] text-text-muted">Совет: отправьте код себе в «Избранное» Telegram — так он точно не потеряется.</p>';
+  openDrawer('Сохранить мой прогресс', body);
+}
+function copySaveCode(btn) {
+  var code = buildSaveCode();
+  var box = $('save-code-box');
+  function done(ok) {
+    safeHaptic(ok ? 'success' : 'warning');
+    if (btn) { var sp = btn.querySelector('span'); if (sp) sp.textContent = ok ? 'Скопировано' : 'Выделите вручную'; }
+    if (!ok && box) { box.focus(); box.select(); }
+  }
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(code).then(function() { done(true); }, function() { done(fallbackCopy(code)); });
+    } else { done(fallbackCopy(code)); }
+  } catch (e) { done(false); }
+}
+function downloadSaveFile() {
+  var st = $('save-status');
+  var code = buildSaveCode();
+  try {
+    var a = document.createElement('a');
+    a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent('Код сохранения целей 2027:\n\n' + code + '\n');
+    a.download = 'moi-celi-2027.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setStatus(st, isEmbedded() ? 'Если файл не скачался — нажмите «Копировать» и сохраните код в заметки.' : 'Файл скачан.');
+  } catch (e) { setStatus(st, 'Скачивание недоступно — нажмите «Копировать».'); }
+}
+function openRestore() {
+  var body =
+    '<p>Вставьте код, который вы сохраняли раньше. Цели, этапы и счётчик дней вернутся.</p>' +
+    '<textarea id="restore-input" placeholder="G27.…" class="mt-4 w-full h-28 rounded-[14px] bg-canvas border border-card-border p-3 font-mono text-[12px] text-text-main outline-none focus:border-primary"></textarea>' +
+    '<div id="restore-status" class="hidden mt-2 text-[13px]"></div>';
+  openDrawer('Восстановить по коду', body, 'Восстановить', 'js:doRestore()');
+}
+function doRestore() {
+  var inp = $('restore-input'), st = $('restore-status');
+  var raw = inp ? inp.value.replace(/\s+/g, '') : '';
+  try {
+    if (raw.indexOf('G27.') !== 0) throw new Error('prefix');
+    var d = JSON.parse(decodeURIComponent(escape(atob(raw.slice(4)))));
+    if (!d || Object.prototype.toString.call(d.goals) !== '[object Array]') throw new Error('shape');
+    store.goals = d.goals;
+    store.maxGoals = Math.min(5, Math.max(1, Number(d.maxGoals) || 3));
+    saveStore(); syncCountButtons(); renderGoals();
+    safeHaptic('success');
+    closeDrawer();
+    showToast('<b>Прогресс восстановлен.</b> ' + store.goals.length + ' ' + plural(store.goals.length, 'цель', 'цели', 'целей') + ' на месте.');
+    setTimeout(goToMyGoals, 350);
+  } catch (e) {
+    safeHaptic('error');
+    if (st) { st.textContent = 'Код не подошёл. Проверьте, что он скопирован целиком и начинается с «G27.»'; st.className = 'mt-2 text-[13px] text-[#FF8A7A]'; }
+  }
+}
+
+/* ---- Карточка «Я сделала это!» для своей цели ---- */
+function drawFinishCard(c, g) {
+  if (!c || !c.getContext) return;
+  var ctx = c.getContext('2d');
+  ctx.save();
+  ctx.setTransform(c.width / 1080, 0, 0, c.height / 1920, 0, 0);
+  var bg = ctx.createLinearGradient(0, 0, 1080, 1920);
+  bg.addColorStop(0, '#D4FA4E'); bg.addColorStop(0.55, '#A6D82C'); bg.addColorStop(1, '#7C8CFF');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, 1080, 1920);
+  glow(ctx, 900, 300, 600, [255, 255, 255], 0.35);
+  glow(ctx, 150, 1700, 700, [124, 140, 255], 0.45);
+  ctx.fillStyle = 'rgba(15,17,20,.08)';
+  ctx.font = '800 420px ' + DISPLAY; ctx.textAlign = 'center';
+  ctx.fillText('2027', 540, 1860);
+  label(ctx, 'ЦЕЛЬ  ДОСТИГНУТА', 100, 260, 'rgba(15,17,20,.75)', 'left', 32);
+  ctx.fillStyle = '#0F1114'; ctx.textAlign = 'left';
+  ctx.font = '800 150px ' + DISPLAY;
+  ctx.fillText('Я сделала', 92, 640);
+  ctx.fillText('это!', 92, 800);
+  var bottom = drawPhrase(ctx, g.title, { font: function(s) { return 'italic 600 ' + s + 'px ' + SERIF; }, size: 96, min: 60, maxW: 880, maxLines: 3, x: 100, y: 900, color: '#0F1114', align: 'left', lh: 1.06 });
+  var days = Math.max(1, daysOnWay(g));
+  var boxY = Math.max(bottom + 80, 1280);
+  ctx.fillStyle = 'rgba(15,17,20,.10)';
+  ctx.fillRect(100, boxY, 400, 190); ctx.fillRect(560, boxY, 420, 190);
+  ctx.fillStyle = 'rgba(15,17,20,.6)'; ctx.font = '500 34px ' + SANS;
+  ctx.fillText('Дней в пути', 130, boxY + 60); ctx.fillText('Этапов пройдено', 590, boxY + 60);
+  ctx.fillStyle = '#0F1114'; ctx.font = '700 84px ' + DISPLAY;
+  ctx.fillText(String(days), 130, boxY + 155); ctx.fillText(String(g.stages.length), 590, boxY + 155);
+  if (g.why) {
+    ctx.font = 'italic 500 46px ' + SERIF; ctx.fillStyle = 'rgba(15,17,20,.75)';
+    var wl = wrapText(ctx, '«' + g.why + '»', 880);
+    for (var i = 0; i < wl.length && i < 2; i++) ctx.fillText(wl[i], 100, boxY + 280 + i * 56);
+  }
+  grain(ctx, 0.08);
+  ctx.restore();
+}
+function openGoalFinish(id) {
+  var g = getGoal(id);
+  if (!g) return;
+  var html =
+    '<div class="mx-auto w-full max-w-[300px] rounded-[26px] overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,.6)]"><canvas id="finish-canvas" width="1080" height="1920" class="w-full block" style="aspect-ratio:9/16"></canvas></div>' +
+    '<p class="mt-5 text-center text-[14px] text-text-muted">Ваша карточка для сторис — сохраните и поделитесь.</p>' +
+    '<button type="button" onclick="downloadCanvas(\'finish-canvas\', \'ya-sdelala-eto-2027.png\', \'finish-status\')" class="mt-4 w-full rounded-[16px] bg-primary text-canvas font-semibold py-4 flex items-center justify-center gap-2"><i data-lucide="download" class="w-5 h-5"></i>Сохранить карточку</button>' +
+    '<div id="finish-status" class="hidden mt-2 text-[12px] text-text-muted text-center"></div>';
+  openFs(html);
+  fireConfetti();
+  drawFinishCard($('finish-canvas'), g);
+}
+function initGoals() {
+  loadStore();
+  syncCountButtons();
+  renderGoals();
+}
+
+/* ===================== MASTER (4 steps) ===================== */
+function masterDots() {
+  var html = '';
+  for (var i = 1; i <= 4; i++) html += '<span class="h-1.5 w-10 rounded-full ' + (i <= master.step ? 'bg-primary' : 'bg-card-border') + '"></span>';
+  return html;
+}
+function masterPhrases() {
+  var why = master.why || 'ради себя', goal = master.goal || 'моя цель';
+  return [
+    'Помни, зачем: ' + why.charAt(0).toLowerCase() + why.slice(1) + '.',
+    'Один шаг сегодня — и «' + goal + '» ближе.',
+    'Ты уже в пути. ' + why + '.',
+    'Не идеально, а регулярно. ' + why + '.'
+  ];
+}
+function openMaster() {
+  master.step = 1;
+  if (!master.plan.length) master.plan = PLANS[master.cat].slice(0, 5);
+  var html =
+    '<div class="step-pane" data-mstep="1">' +
+      '<div class="text-[12px] text-text-muted">Шаг 1 из 4</div>' +
+      '<h3 class="font-display font-semibold text-[24px] mt-1">Что хочу?</h3>' +
+      '<div id="m-cats" class="mt-4 flex flex-wrap gap-2"></div>' +
+      '<input id="m-goal" type="text" maxlength="60" class="mt-4 w-full rounded-[14px] bg-surface border border-card-border px-4 py-3.5 text-[15px] text-text-main outline-none focus:border-primary" />' +
+      '<div id="m-goal-err" class="hidden mt-2 text-[13px] text-primary">Напишите цель хотя бы в пару слов.</div>' +
+      '<button type="button" onclick="masterGo(2)" class="mt-6 w-full rounded-[16px] bg-primary text-canvas font-semibold py-4 flex items-center justify-center gap-2">Дальше <i data-lucide="arrow-right" class="w-5 h-5"></i></button>' +
+    '</div>' +
+    '<div class="step-pane" data-mstep="2">' +
+      '<div class="text-[12px] text-text-muted">Шаг 2 из 4</div>' +
+      '<h3 class="font-display font-semibold text-[24px] mt-1">Как пойму, что достигла?</h3>' +
+      '<div class="mt-3 flex items-start gap-2 rounded-[14px] bg-secondary/12 border border-secondary/25 p-3 text-[13px]"><i data-lucide="lightbulb" class="w-4 h-4 text-secondary shrink-0 mt-0.5"></i><span class="min-w-0">Сделайте цель измеримой — сколько? к какому числу?</span></div>' +
+      '<div class="mt-4 grid grid-cols-2 gap-1 rounded-[14px] bg-surface border border-card-border p-1">' +
+        '<button type="button" id="m-mode-number" onclick="masterMode(\'number\')" class="seg-btn rounded-[10px] py-2.5 text-[14px] font-semibold text-text-muted">Цифра</button>' +
+        '<button type="button" id="m-mode-stages" onclick="masterMode(\'stages\')" class="seg-btn rounded-[10px] py-2.5 text-[14px] font-semibold text-text-muted">Этапы</button>' +
+      '</div>' +
+      '<div id="m-number" class="mt-5">' +
+        '<div class="flex justify-between items-baseline"><span class="text-[13px] text-text-muted">Сумма или объём</span><span class="font-semibold tabnum"><span id="m-sum-val"></span> ₽</span></div>' +
+        '<input id="m-sum" type="range" min="10000" max="2000000" step="10000" class="goal-range mt-2" />' +
+        '<div class="flex justify-between items-baseline mt-5"><span class="text-[13px] text-text-muted">Срок</span><span class="font-semibold tabnum"><span id="m-months-val"></span></span></div>' +
+        '<input id="m-months" type="range" min="1" max="12" step="1" class="goal-range mt-2" />' +
+      '</div>' +
+      '<div id="m-stages" class="mt-5 hidden">' +
+        '<div class="flex items-center justify-between gap-2"><span class="text-[13px] text-text-muted min-w-0">План из 5 шагов</span>' +
+        '<button type="button" onclick="masterShuffle()" class="shrink-0 rounded-full border border-card-border px-3 py-1.5 text-[12px] font-semibold flex items-center gap-1.5"><i data-lucide="shuffle" class="w-3.5 h-3.5"></i>Предложить заново</button></div>' +
+        '<ol id="m-plan" class="mt-3 space-y-2"></ol>' +
+      '</div>' +
+      '<div class="mt-6 flex gap-2"><button type="button" onclick="masterGo(1)" class="w-14 shrink-0 rounded-[16px] border border-card-border flex items-center justify-center" aria-label="Назад"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>' +
+      '<button type="button" onclick="masterGo(3)" class="flex-1 rounded-[16px] bg-primary text-canvas font-semibold py-4 flex items-center justify-center gap-2">Дальше <i data-lucide="arrow-right" class="w-5 h-5"></i></button></div>' +
+    '</div>' +
+    '<div class="step-pane" data-mstep="3">' +
+      '<div class="text-[12px] text-text-muted">Шаг 3 из 4</div>' +
+      '<h3 class="font-display font-semibold text-[24px] mt-1">Зачем мне это?</h3>' +
+      '<p class="mt-1 text-[13px] text-text-muted">Одна фраза — она будет мотиватором в напоминаниях.</p>' +
+      '<input id="m-why" type="text" maxlength="70" class="mt-4 w-full rounded-[14px] bg-surface border border-card-border px-4 py-3.5 text-[15px] text-text-main outline-none focus:border-primary" />' +
+      '<div class="mt-4 bento p-4"><div class="flex items-center justify-between gap-2"><span class="text-[11px] uppercase tracking-[.14em] text-text-muted">Мотивационная фраза</span>' +
+      '<button type="button" onclick="masterPhrase()" class="text-[12px] font-semibold text-primary flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Ещё</button></div>' +
+      '<div id="m-phrase" class="mt-2 font-display font-semibold text-[17px] leading-snug break-words"></div></div>' +
+      '<div class="mt-6 flex gap-2"><button type="button" onclick="masterGo(2)" class="w-14 shrink-0 rounded-[16px] border border-card-border flex items-center justify-center" aria-label="Назад"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>' +
+      '<button type="button" onclick="masterGo(4)" class="flex-1 rounded-[16px] bg-primary text-canvas font-semibold py-4 flex items-center justify-center gap-2">Дальше <i data-lucide="arrow-right" class="w-5 h-5"></i></button></div>' +
+    '</div>' +
+    '<div class="step-pane" data-mstep="4">' +
+      '<div class="text-[12px] text-text-muted">Шаг 4 из 4</div>' +
+      '<h3 class="font-display font-semibold text-[24px] mt-1">Срок и первый шаг</h3>' +
+      '<label class="block mt-4 text-[13px] text-text-muted" for="m-deadline">К какому числу</label>' +
+      '<input id="m-deadline" type="date" class="mt-1.5 w-full rounded-[14px] bg-surface border border-card-border px-4 py-3.5 text-[15px] text-text-main outline-none focus:border-primary" style="color-scheme:dark" />' +
+      '<label class="block mt-4 text-[13px] text-text-muted" for="m-first">Первый шаг на этой неделе</label>' +
+      '<input id="m-first" type="text" maxlength="70" class="mt-1.5 w-full rounded-[14px] bg-surface border border-card-border px-4 py-3.5 text-[15px] text-text-main outline-none focus:border-primary" />' +
+      '<div id="m-summary" class="mt-5 rounded-[22px] bg-primary text-canvas p-5"></div>' +
+      '<button type="button" onclick="masterCalendar()" class="mt-3 w-full rounded-[16px] border border-text-main/20 font-semibold py-3.5 flex items-center justify-center gap-2"><i data-lucide="calendar-plus" class="w-5 h-5"></i>Добавить в календарь</button>' +
+      '<div id="m-cal-status" class="hidden mt-2 text-[12px] text-text-muted text-center"></div>' +
+      '<div class="mt-4 flex gap-2"><button type="button" onclick="masterGo(3)" class="w-14 shrink-0 rounded-[16px] border border-card-border flex items-center justify-center" aria-label="Назад"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>' +
+      '<button type="button" onclick="saveMasterGoal()" class="flex-1 rounded-[16px] bg-primary text-canvas font-semibold py-4 flex items-center justify-center gap-2"><i data-lucide="check" class="w-5 h-5"></i>Сохранить цель</button></div>' +
+      '<div id="m-save-status" class="hidden mt-3 rounded-[14px] bg-secondary/12 border border-secondary/25 p-3 text-[13px] leading-relaxed"></div>' +
+    '</div>';
+  openFs(html, masterDots());
+  bindMaster();
+  masterGo(1, true);
+}
+function bindMaster() {
+  renderMasterCats();
+  var g = $('m-goal'); if (g) { g.value = master.goal; g.addEventListener('input', function() { master.goal = this.value; }); }
+  var s = $('m-sum'), m = $('m-months');
+  if (s) { s.value = master.sum; s.addEventListener('input', masterRanges); }
+  if (m) { m.value = master.months; m.addEventListener('input', function() { masterRanges(); safeHaptic('selection'); }); }
+  var w = $('m-why'); if (w) { w.value = master.why; w.addEventListener('input', function() { master.why = this.value.trim(); renderMasterPhrase(); }); }
+  var d = $('m-deadline'); if (d) { d.value = master.deadline; d.addEventListener('change', function() { master.deadline = this.value; renderSummary(); }); }
+  var f = $('m-first'); if (f) { f.value = master.first; f.addEventListener('input', function() { master.first = this.value; renderSummary(); }); }
+  masterRanges();
+  masterMode(master.mode, true);
+  renderMasterPlan(false);
+  renderMasterPhrase();
+}
+function renderMasterCats() {
+  var wrap = $('m-cats');
+  if (!wrap) return;
+  var html = '';
+  for (var i = 0; i < CATEGORIES.length; i++) {
+    var c = CATEGORIES[i];
+    html += '<button type="button" onclick="masterCat(\'' + c.id + '\')" class="chip rounded-full border border-card-border bg-surface px-3.5 py-2 text-[13px] font-medium flex items-center gap-1.5' + (c.id === master.cat ? ' active' : '') + '"><i data-lucide="' + c.icon + '" class="w-3.5 h-3.5"></i>' + c.name + '</button>';
+  }
+  wrap.innerHTML = html;
+  refreshIcons();
+}
+function masterCat(id) {
+  var c = getCat(id);
+  master.cat = id; master.goal = c.goal; master.first = c.first;
+  master.plan = PLANS[id].slice(0, 5);
+  master.mode = id === 'other' ? 'number' : 'stages';
+  var g = $('m-goal'); if (g) g.value = master.goal;
+  var f = $('m-first'); if (f) f.value = master.first;
+  safeHaptic('selection');
+  renderMasterCats(); renderMasterPlan(false); masterMode(master.mode, true);
+}
+function masterGo(n, silent) {
+  if (n === 2 && master.step === 1) {
+    var g = $('m-goal'), err = $('m-goal-err');
+    var v = g ? g.value.trim() : '';
+    if (v.length < 3) { if (err) err.classList.remove('hidden'); safeHaptic('error'); return; }
+    if (err) err.classList.add('hidden');
+    master.goal = v;
+  }
+  master.step = n;
+  var panes = document.querySelectorAll('#fs-content .step-pane');
+  for (var i = 0; i < panes.length; i++) panes[i].classList.toggle('active', Number(panes[i].getAttribute('data-mstep')) === n);
+  var d = $('fs-dots'); if (d) d.innerHTML = masterDots();
+  if (n === 4) renderSummary();
+  var c = $('fs-content'); if (c) c.scrollTop = 0;
+  if (!silent) safeHaptic('light');
+  refreshIcons();
+}
+function masterMode(mode, silent) {
+  master.mode = mode;
+  var bn = $('m-mode-number'), bs = $('m-mode-stages');
+  if (bn) bn.classList.toggle('active', mode === 'number');
+  if (bs) bs.classList.toggle('active', mode === 'stages');
+  var pn = $('m-number'), ps = $('m-stages');
+  if (pn) pn.classList.toggle('hidden', mode !== 'number');
+  if (ps) ps.classList.toggle('hidden', mode !== 'stages');
+  if (!silent) safeHaptic('selection');
+}
+function masterRanges() {
+  var s = $('m-sum'), m = $('m-months');
+  if (s) { master.sum = Number(s.value); s.style.setProperty('--fill', ((master.sum - 10000) / 1990000 * 100) + '%'); }
+  if (m) { master.months = Number(m.value); m.style.setProperty('--fill', ((master.months - 1) / 11 * 100) + '%'); }
+  var sv = $('m-sum-val'); if (sv) sv.textContent = fmt(master.sum);
+  var mv = $('m-months-val'); if (mv) mv.textContent = master.months + ' ' + plural(master.months, 'месяц', 'месяца', 'месяцев');
+}
+function renderMasterPlan(anim) {
+  var list = $('m-plan');
+  if (!list) return;
+  var html = '';
+  for (var i = 0; i < master.plan.length; i++) {
+    html += '<li class="flex items-center gap-3 rounded-[14px] bg-surface border border-card-border px-3 py-3' + (anim ? ' shuffle-anim' : '') + '" style="animation-delay:' + (i * 50) + 'ms">' +
+      '<span class="w-7 h-7 rounded-full bg-primary/15 text-primary text-[12px] font-bold flex items-center justify-center shrink-0">' + (i + 1) + '</span>' +
+      '<span class="mstep flex-1 min-w-0 text-[14px] break-words outline-none" contenteditable="true" data-idx="' + i + '">' + esc(master.plan[i]) + '</span></li>';
+  }
+  list.innerHTML = html;
+  var eds = list.querySelectorAll('.mstep');
+  for (var j = 0; j < eds.length; j++) eds[j].addEventListener('input', function() { master.plan[Number(this.getAttribute('data-idx'))] = this.textContent; });
+}
+function masterShuffle() { master.plan = shufflePlan(master.cat); safeHaptic('light'); renderMasterPlan(true); }
+function renderMasterPhrase() { var p = $('m-phrase'); if (p) p.textContent = masterPhrases()[master.phraseIdx % masterPhrases().length]; }
+function masterPhrase() { master.phraseIdx++; safeHaptic('selection'); renderMasterPhrase(); }
+function renderSummary() {
+  var box = $('m-summary');
+  if (!box) return;
+  var dl = master.deadline ? master.deadline.split('-').reverse().join('.') : '—';
+  var mid = master.mode === 'number'
+    ? '<div class="mt-3 font-display font-bold text-[30px] leading-none tabnum break-words">по ' + fmt(master.sum / master.months) + ' ₽</div><div class="text-[13px] font-medium mt-1">в месяц · ' + master.months + ' ' + plural(master.months, 'этап', 'этапа', 'этапов') + '</div>'
+    : '<div class="mt-3 font-display font-bold text-[30px] leading-none">' + master.plan.length + ' ' + plural(master.plan.length, 'этап', 'этапа', 'этапов') + '</div><div class="text-[13px] font-medium mt-1 break-words">первый: ' + esc(master.plan[0] || '') + '</div>';
+  box.innerHTML = '<div class="text-[11px] font-semibold uppercase tracking-[.14em] opacity-70">Ваш план</div>' +
+    '<div class="font-display font-semibold text-[18px] mt-1 break-words">' + esc(master.goal) + '</div>' + mid +
+    '<div class="mt-4 pt-3 border-t border-canvas/15 text-[13px] space-y-1"><div class="break-words">Срок: <b>' + dl + '</b></div><div class="break-words">На этой неделе: <b>' + esc(master.first || '—') + '</b></div></div>';
+}
+function masterCalendar() { addToCalendar(master.goal, state.reminder, master.deadline, master.why, 'm-cal-status'); }
+
+/* ===================== COUNT GOALS ===================== */
+function initCount() {
+  var btns = document.querySelectorAll('.count-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].addEventListener('click', function() {
+      for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
+      this.classList.add('active');
+      var cnt = this.getAttribute('data-count');
+      var d = $('count-desc'); if (d) d.textContent = COUNT_DESC[cnt];
+      var pick = $('pricing-cta'); if (pick) pick.setAttribute('data-id', 'goals-' + cnt);
+      safeHaptic('selection');
+    });
+  }
+}
+
+/* ===================== OBSERVERS / THUMB BAR / PARALLAX ===================== */
+function countUp(el, target) {
+  var start = null;
+  function step(ts) {
+    if (!start) start = ts;
+    var p = Math.min(1, (ts - start) / 1400), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * e);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function showRing() {
+  if (ringShown) return;
+  ringShown = true;
+  renderTracker(true);
+  var p = $('ring-pct'); if (p) countUp(p, Math.round(state.stage / 12 * 100));
+  var nums = document.querySelectorAll('#tracker [data-count]');
+  for (var i = 0; i < nums.length; i++) countUp(nums[i], Number(nums[i].getAttribute('data-count')));
+}
+function isOverlayOpen() {
+  var d = $('bottom-drawer'), fs = $('fs-dialog');
+  return (d && d.classList.contains('opacity-100')) || (fs && !fs.classList.contains('hidden'));
+}
+function syncThumbBar() {
+  var tb = $('thumb-bar');
+  if (!tb) return;
+  var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+  if (y > 80 && !isOverlayOpen()) tb.classList.remove('off'); else tb.classList.add('off');
+}
+var ticking = false;
+function onScroll() {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(function() {
+    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    if (y < 900) {
+      var w = $('hero-parallax-wrap');
+      if (w) w.style.transform = 'translate3d(0,' + (y * 0.48) + 'px,0) scale(' + (1 + y * 0.0003) + ')';
+      var b = $('hero-badge');
+      if (b) b.style.transform = 'translate3d(0,' + (-y * 0.18) + 'px,0)';
+    }
+    syncThumbBar();
+    ticking = false;
+  });
+}
+function initObservers() {
+  var reveals = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    for (var i = 0; i < reveals.length; i++) reveals[i].classList.add('in');
+    showRing();
+    return;
+  }
+  var io = new IntersectionObserver(function(entries) {
+    for (var i = 0; i < entries.length; i++) if (entries[i].isIntersecting) { entries[i].target.classList.add('in'); io.unobserve(entries[i].target); }
+  }, { threshold: 0.12 });
+  for (var j = 0; j < reveals.length; j++) io.observe(reveals[j]);
+  var tr = $('tracker');
+  if (tr) {
+    var tio = new IntersectionObserver(function(e) { if (e[0] && e[0].isIntersecting) { showRing(); tio.disconnect(); } }, { threshold: 0.35 });
+    tio.observe(tr);
+  }
+}
+
+/* ===================== NOTIBOT INIT (РЕЖИМ А) ===================== */
+var elLoading = document.getElementById('loading-screen');
+var elUserGreeting = document.getElementById('userGreeting');
+var elUserAvatar = document.getElementById('userAvatar');
+var elCreditsBadge = document.getElementById('creditsBadge');
+var elUserBalance = document.getElementById('userBalance');
+function getInitials(name) {
+  if (!name) return '?';
+  var parts = name.trim().split(/\s+/);
+  var a = parts[0] ? parts[0].charAt(0) : '';
+  var b = parts.length > 1 ? parts[1].charAt(0) : '';
+  return (a + b).toUpperCase() || '?';
+}
+function applyPersonalization(user) {
+  if (!user) return;
+  if (elUserGreeting) {
+    elUserGreeting.textContent = user.displayName ? ('Привет, ' + user.displayName + '!') : 'Привет!';
+  }
+  if (elUserAvatar) {
+    if (user.photoURL) {
+      elUserAvatar.innerHTML = '<img src="' + user.photoURL + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:9999px;" onerror="this.style.display=\'none\';this.parentNode.textContent=\'' + getInitials(user.displayName) + '\';" />';
+    } else {
+      elUserAvatar.textContent = getInitials(user.displayName);
+    }
+  }
+  if (elCreditsBadge && user.aiCredits !== undefined) elCreditsBadge.textContent = user.aiCredits;
+  if (elUserBalance && user.balance !== undefined) elUserBalance.textContent = user.balance;
+}
+function hideLoader() {
+  if (elLoading && elLoading.style.display !== 'none') {
+    elLoading.style.opacity = '0';
+    setTimeout(function() { if (elLoading) elLoading.style.display = 'none'; }, 200);
+  }
+}
+function handleNotibotInit(user, app) {
+  applyPersonalization(user);
+  hideLoader();
+}
+function isNonEmptyObj(obj) {
+  try { return obj && typeof obj === 'object' && Object.keys(obj).length > 0; } catch (e) { return false; }
+}
+
+/* ===================== BOOT ===================== */
+function boot() {
+  updateDaysLeft();
+  setInterval(updateDaysLeft, 60000);
+  initHook();
+  renderTracker(false);
+  renderPlansRow();
+  initReminders();
+  initCount();
+  renderFaq();
+  initDrawerSwipe();
+  initObservers();
+  initMotivation();
+  initGoals();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function() { renderAllArt(); });
+  window.addEventListener('scroll', onScroll, { passive: true });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeDrawer(); closeFs(); } });
+  refreshIcons();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+
+if (window.notibot) {
+  try {
+    if (typeof window.notibot.onUpdate === 'function') {
+      window.notibot.onUpdate(function(user, app) {
+        applyPersonalization(user);
+        hideLoader();
+      });
+    }
+  } catch (e) {}
+
+  if (window.notibotInitData) {
+    handleNotibotInit(window.notibotInitData.user, window.notibotInitData.app);
+  } else if (isNonEmptyObj(window.notibot.app) || isNonEmptyObj(window.notibot.user)) {
+    handleNotibotInit(window.notibot.user, window.notibot.app);
+  }
+  setTimeout(function() { hideLoader(); }, 800);
+} else {
+  setTimeout(function() { hideLoader(); }, 300);
+}
+</script>
+</body>
+</html>
